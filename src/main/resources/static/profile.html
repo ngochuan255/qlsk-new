@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thông Tin Cá Nhân - QLSK EventHub</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .profile-container {
+            max-width: 900px;
+            margin: 2rem auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .profile-header-card {
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%);
+            color: #ffffff;
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            box-shadow: 0 10px 25px -5px rgba(67, 56, 202, 0.25);
+            flex-wrap: wrap;
+        }
+
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.18);
+            border: 3px solid rgba(255, 255, 255, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: #ffffff;
+            flex-shrink: 0;
+            backdrop-filter: blur(8px);
+        }
+
+        .profile-header-info {
+            flex: 1;
+            min-width: 240px;
+        }
+
+        .profile-header-name {
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin-bottom: 0.35rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .profile-header-meta {
+            display: flex;
+            gap: 1.25rem;
+            font-size: 0.9rem;
+            opacity: 0.9;
+            flex-wrap: wrap;
+        }
+
+        .badge-role {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 0.03em;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: #ffffff;
+        }
+
+        .badge-status {
+            background: #dcfce7;
+            color: #15803d;
+            padding: 0.25rem 0.65rem;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .form-group label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .form-control {
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            font-size: 0.95rem;
+            outline: none;
+            width: 100%;
+            background-color: #ffffff;
+            box-sizing: border-box;
+            transition: all 0.2s ease;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+        }
+
+        .form-control:disabled,
+        .form-control[readonly] {
+            background-color: #f8fafc;
+            color: #64748b;
+            cursor: not-allowed;
+            border-color: #e2e8f0;
+        }
+
+        /* TOAST */
+        #toast {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            z-index: 9999;
+            padding: 0.85rem 1.4rem;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            font-size: 0.95rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            display: none;
+            transition: all 0.3s ease;
+            max-width: 400px;
+        }
+
+        #toast.success {
+            background-color: #10b981;
+            color: #ffffff;
+        }
+
+        #toast.error {
+            background-color: #ef4444;
+            color: #ffffff;
+        }
+
+        @media (max-width: 640px) {
+            .form-row {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .profile-header-card {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .profile-header-name {
+                justify-content: center;
+            }
+
+            .profile-header-meta {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast"></div>
+
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="brand">
+                <span class="brand-badge">QLSK</span>
+                EventHub Pro
+            </a>
+            <div id="nav-auth" class="nav-auth"></div>
+        </div>
+    </nav>
+
+    <!-- MAIN PROFILE CONTENT -->
+    <div class="container">
+        <div class="profile-container">
+
+            <!-- HEADER PROFILE CARD -->
+            <div class="profile-header-card">
+                <div class="profile-avatar" id="avatar-initials">--</div>
+                <div class="profile-header-info">
+                    <div class="profile-header-name">
+                        <span id="header-full-name">Người Tham Gia</span>
+                        <span class="badge-role" id="badge-role">Người Tham Gia</span>
+                        <span class="badge-status">Đang hoạt động</span>
+                    </div>
+                    <div class="profile-header-meta">
+                        <span>Tài khoản: <strong id="header-username">--</strong></span>
+                        <span>Email: <strong id="header-email">--</strong></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CARD 1: CẬP NHẬT THÔNG TIN -->
+            <div class="card">
+                <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 1.25rem;">
+                    <h2 style="font-size: 1.15rem; font-weight: 700; margin: 0;">Thông Tin Cá Nhân</h2>
+                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.25rem; margin-bottom: 0;">
+                        Cập nhật họ tên hiển thị và số điện thoại liên hệ của bạn.
+                    </p>
+                </div>
+
+                <form id="profile-info-form" onsubmit="handleUpdateProfile(event)">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="profile-username">Tên đăng nhập</label>
+                            <input type="text" id="profile-username" class="form-control" readonly disabled>
+                        </div>
+                        <div class="form-group">
+                            <label for="profile-email">Địa chỉ Email</label>
+                            <input type="email" id="profile-email" class="form-control" readonly disabled>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="profile-fullname">Họ và tên *</label>
+                            <input type="text" id="profile-fullname" class="form-control"
+                                placeholder="Ví dụ: Nguyễn Văn Anh" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="profile-phone">Số điện thoại liên hệ</label>
+                            <input type="tel" id="profile-phone" class="form-control"
+                                placeholder="Ví dụ: 0987654321">
+                        </div>
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 0.5rem;">
+                        <button type="submit" id="btn-save-profile" class="btn btn-primary">
+                            Lưu Thay Đổi
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- CARD 2: ĐỔI MẬT KHẨU -->
+            <div class="card">
+                <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 1.25rem;">
+                    <h2 style="font-size: 1.15rem; font-weight: 700; margin: 0;">Đổi Mật Khẩu Tài Khoản</h2>
+                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.25rem; margin-bottom: 0;">
+                        Để bảo mật tài khoản, vui lòng sử dụng mật khẩu mạnh có ít nhất 6 ký tự.
+                    </p>
+                </div>
+
+                <form id="password-form" onsubmit="handleChangePassword(event)">
+                    <div class="form-group">
+                        <label for="old-password">Mật khẩu hiện tại *</label>
+                        <input type="password" id="old-password" class="form-control"
+                            placeholder="Nhập mật khẩu hiện tại" required>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="new-password">Mật khẩu mới *</label>
+                            <input type="password" id="new-password" class="form-control"
+                                placeholder="Ít nhất 6 ký tự" minlength="6" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="confirm-password">Xác nhận mật khẩu mới *</label>
+                            <input type="password" id="confirm-password" class="form-control"
+                                placeholder="Nhập lại mật khẩu mới" minlength="6" required>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 0.5rem;">
+                        <button type="submit" id="btn-change-password" class="btn btn-primary">
+                            Đổi Mật Khẩu
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer>
+        <p>© 2026 Hệ Thống Quản Lý Tổ Chức Sự Kiện và Kiểm Soát Tham Dự - QLSK System.</p>
+    </footer>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js?v=6"></script>
+    <script>
+        requireAuth();
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadUserProfile();
+        });
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = type;
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3500);
+        }
+
+        async function loadUserProfile() {
+            try {
+                const token = getToken();
+                const res = await fetch('/api/users/profile', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!res.ok) {
+                    throw new Error('Không thể tải thông tin cá nhân');
+                }
+
+                const data = await res.json();
+
+                // Điền dữ liệu vào form
+                document.getElementById('profile-username').value = data.username || '';
+                document.getElementById('profile-email').value = data.email || '';
+                document.getElementById('profile-fullname').value = data.fullName || '';
+                document.getElementById('profile-phone').value = data.phone || '';
+
+                // Header info
+                document.getElementById('header-username').textContent = data.username || '--';
+                document.getElementById('header-email').textContent = data.email || '--';
+                document.getElementById('header-full-name').textContent = data.fullName || data.username || 'Người tham gia';
+
+                // Role badge
+                const roleBadge = document.getElementById('badge-role');
+                if (data.role === 'ROLE_ADMIN') {
+                    roleBadge.textContent = 'Quản Trị Viên';
+                } else if (data.role === 'ROLE_ORGANIZER') {
+                    roleBadge.textContent = 'Ban Tổ Chức';
+                } else {
+                    roleBadge.textContent = 'Người Tham Gia';
+                }
+
+                // Avatar initials
+                const name = (data.fullName || data.username || 'NG').trim();
+                const initials = name.split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
+                document.getElementById('avatar-initials').textContent = initials || 'NG';
+
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function handleUpdateProfile(e) {
+            e.preventDefault();
+            const fullName = document.getElementById('profile-fullname').value.trim();
+            const phone = document.getElementById('profile-phone').value.trim();
+            const btn = document.getElementById('btn-save-profile');
+
+            if (!fullName) {
+                showToast('Họ và tên không được để trống', 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Đang lưu...';
+
+            try {
+                const token = getToken();
+                const res = await fetch('/api/users/profile', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ fullName, phone })
+                });
+
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.message || 'Cập nhật thất bại');
+                }
+
+                // Cập nhật session user trong localStorage
+                const currentUser = getUser();
+                if (currentUser) {
+                    currentUser.fullName = data.fullName;
+                    currentUser.phone = data.phone;
+                    localStorage.setItem('user', JSON.stringify(currentUser));
+                }
+
+                document.getElementById('header-full-name').textContent = data.fullName;
+                const initials = data.fullName.split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
+                document.getElementById('avatar-initials').textContent = initials || 'NG';
+
+                // Tải lại navbar để cập nhật tên góc phải
+                setupNavbar();
+
+                showToast('Cập nhật thông tin thành công!', 'success');
+            } catch (err) {
+                showToast(err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Lưu Thay Đổi';
+            }
+        }
+
+        async function handleChangePassword(e) {
+            e.preventDefault();
+            const oldPassword = document.getElementById('old-password').value;
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            const btn = document.getElementById('btn-change-password');
+
+            if (newPassword !== confirmPassword) {
+                showToast('Mật khẩu mới và xác nhận mật khẩu không khớp', 'error');
+                return;
+            }
+
+            if (newPassword.length < 6) {
+                showToast('Mật khẩu mới phải có ít nhất 6 ký tự', 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Đang xử lý...';
+
+            try {
+                const token = getToken();
+                const res = await fetch('/api/users/profile', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ oldPassword, newPassword })
+                });
+
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.message || 'Đổi mật khẩu thất bại');
+                }
+
+                document.getElementById('password-form').reset();
+                showToast('Đổi mật khẩu thành công!', 'success');
+            } catch (err) {
+                showToast(err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Đổi Mật Khẩu';
+            }
+        }
+    </script>
+</body>
+
+</html>

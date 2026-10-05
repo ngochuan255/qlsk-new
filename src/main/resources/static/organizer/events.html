@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Sự Kiện - Ban Tổ Chức</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <style>
+        .table-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        #events-table {
+            width: 100%;
+            min-width: unset;
+            table-layout: auto;
+        }
+
+        #events-table th,
+        #events-table td {
+            padding: 0.85rem 0.65rem;
+        }
+
+        /* MODAL STYLES */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-box {
+            background: #ffffff;
+            border-radius: var(--radius-lg);
+            width: 100%;
+            max-width: 520px;
+            box-shadow: var(--shadow-xl);
+            overflow: hidden;
+            animation: modalFadeIn 0.2s ease-out;
+        }
+
+        .modal-box-lg {
+            max-width: 980px;
+            width: 95%;
+            max-height: 88vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-box-lg form {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .modal-body-scrollable {
+            overflow-y: auto;
+            padding: 1.5rem;
+            flex: 1;
+        }
+
+        .modal-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            font-size: 1.15rem;
+            font-weight: 700;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-muted);
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .modal-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            background: #f8fafc;
+        }
+
+        /* CSS FORM SỬA VÀ TẠO SỰ KIỆN */
+        #event-edit-modal .form-row,
+        #event-create-modal .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 1.25rem;
+        }
+
+        #event-edit-modal .form-group,
+        #event-create-modal .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            margin-bottom: 1.25rem;
+        }
+
+        #event-edit-modal .form-group label,
+        #event-create-modal .form-group label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        #event-edit-modal .form-control,
+        #event-create-modal .form-control {
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            font-size: 0.95rem;
+            outline: none;
+            width: 100%;
+            background-color: #ffffff;
+            box-sizing: border-box;
+            transition: all 0.2s ease;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.65rem 0.9rem;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            background-color: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            outline: none;
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary) !important;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12) !important;
+        }
+
+        #event-edit-modal .form-control:focus,
+        #event-create-modal .form-control:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+        }
+
+        @media (max-width: 640px) {
+            #event-edit-modal .form-row,
+            #event-create-modal .form-row {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+        }
+
+        @keyframes modalFadeIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-layout">
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <span class="brand-badge">BTC</span>
+                Event Manager
+            </div>
+            <ul class="sidebar-menu">
+                <li><a href="/organizer/index.html">Tổng quan</a></li>
+                <li><a href="/organizer/events.html" class="active">Quản lý sự kiện</a></li>
+                <li><a href="/organizer/event-list.html">Danh sách sự kiện</a></li>
+                <li><a href="/organizer/checkin.html">Check-in Mã QR</a></li>
+                <li><a href="/organizer/reports.html">Báo cáo và thống kê</a></li>
+                <li><a href="/organizer/profile.html">Thông tin cá nhân</a></li>
+                <li><a href="/">Xem trang chủ</a></li>
+                <li style="margin-top: 0.5rem;">
+                    <button onclick="logout()" class="btn btn-outline btn-sm"
+                        style="color:white; border-color:#334155; width:100%; padding:0.65rem 1rem;">Đăng xuất</button>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- MAIN -->
+        <main class="main-content">
+            <div class="top-bar">
+                <h1 class="page-title">Quản Lý Sự Kiện</h1>
+                <div id="user-name-display" style="font-weight:600; color:var(--primary);">Ban Tổ Chức</div>
+            </div>
+
+            <div class="content-body">
+                <div class="card" style="margin-bottom:1.5rem;">
+                    <div
+                        style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:1rem;">
+                        <div>
+                            <h2 style="font-size:1.25rem; font-weight:800;">Quản Lý Sự Kiện</h2>
+                            <p style="font-size:0.875rem; color:var(--text-secondary);">Quản lý danh sách sự kiện và cập nhật thông tin sự kiện.</p>
+                        </div>
+                        <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
+                            <select id="filter-event-status" class="form-control"
+                                style="padding:0.55rem 0.9rem; border-radius:8px; cursor:pointer;"
+                                onchange="filterEventsTable()">
+                                <option value="">Tất cả trạng thái</option>
+                                <option value="DRAFT">Chờ duyệt (Nháp)</option>
+                                <option value="OPEN_FOR_REGISTRATION">Đang mở đăng ký</option>
+                                <option value="FULL">Đã đủ chỗ</option>
+                                <option value="ONGOING">Đang diễn ra</option>
+                                <option value="COMPLETED">Đã kết thúc</option>
+                            </select>
+                            <button type="button" onclick="openCreateEventModal()" class="btn btn-primary btn-sm"
+                                style="display:inline-flex; align-items:center; gap:0.4rem; padding:0.55rem 1rem; border-radius:8px; font-weight:600; cursor:pointer; white-space:nowrap;">
+                                <span style="font-size:1.1rem; line-height:1;">+</span> Tạo sự kiện mới
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table class="data-table" id="events-table">
+                            <thead>
+                                <tr>
+                                    <th>Tên Sự Kiện</th>
+                                    <th>Danh Mục</th>
+                                    <th>Ban Tổ Chức</th>
+                                    <th>Thời Gian</th>
+                                    <th style="text-align:center;">Chỗ Ngồi / Đăng Ký</th>
+                                    <th style="text-align:center;">Trạng Thái</th>
+                                    <th style="text-align:center; min-width:180px;">Hành Động</th>
+                                </tr>
+                            </thead>
+                            <tbody id="approval-table-body">
+                                <tr>
+                                    <td colspan="7" style="text-align:center;">Đang tải danh sách sự kiện...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ====================================================================
+         EVENT CREATE MODAL (TẠO SỰ KIỆN MỚI)
+         ==================================================================== -->
+    <div id="event-create-modal" class="modal-overlay">
+        <div class="modal-box modal-box-lg">
+            <div class="modal-header">
+                <h3>Khởi Tạo Sự Kiện Mới</h3>
+                <button type="button" class="modal-close" onclick="closeCreateEventModal()">&times;</button>
+            </div>
+            <form id="event-create-form" onsubmit="handleCreateEvent(event)">
+                <div class="modal-body modal-body-scrollable">
+                    <div class="form-group">
+                        <label for="create-event-title">Tên sự kiện *</label>
+                        <input type="text" id="create-event-title" class="form-control"
+                            placeholder="Ví dụ: Hội Thảo Trí Tuệ Nhân Tạo & Chuyển Đổi Số 2026" required>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="create-event-category">Danh mục sự kiện *</label>
+                            <select id="create-event-category" class="form-control" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="create-event-location">Địa điểm tổ chức *</label>
+                            <input type="text" id="create-event-location" class="form-control"
+                                placeholder="Hội trường A, Tầng 3..." required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="create-event-start">Thời gian bắt đầu *</label>
+                            <input type="datetime-local" id="create-event-start" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="create-event-end">Thời gian kết thúc *</label>
+                            <input type="datetime-local" id="create-event-end" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="create-event-max">Số lượng người tham gia tối đa *</label>
+                            <input type="number" id="create-event-max" class="form-control" min="1" value="50" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="create-event-budget">Kinh phí dự kiến (VNĐ)</label>
+                            <input type="number" id="create-event-budget" class="form-control" placeholder="Ví dụ: 15000000"
+                                min="0" step="any">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Ảnh sự kiện (Banner)</label>
+                        <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
+                            <input type="file" id="create-event-banner-file" accept="image/*" style="display:none;"
+                                onchange="handleCreateBannerUpload(this)">
+                            <button type="button" class="btn btn-outline btn-sm"
+                                onclick="document.getElementById('create-event-banner-file').click()">
+                                📁 Tải ảnh lên từ máy
+                            </button>
+                            <span id="create-event-banner-status"
+                                style="font-size:0.85rem; color:var(--text-secondary);">Chưa có ảnh</span>
+                        </div>
+                        <input type="hidden" id="create-event-banner">
+                        <div id="create-event-banner-preview-box" style="margin-top:0.75rem; display:none;">
+                            <div style="position:relative; display:inline-block; max-width:100%;">
+                                <img id="create-event-banner-preview" src="" alt="Banner Preview"
+                                    style="max-height:160px; max-width:100%; border-radius:8px; border:1px solid var(--border-color); object-fit:cover; display:block;">
+                                <button type="button" onclick="removeCreateBanner()"
+                                    style="position:absolute; top:6px; right:6px; background:rgba(0,0,0,0.65); color:#fff; border:none; border-radius:50%; width:26px; height:26px; cursor:pointer; font-size:13px; display:flex; align-items:center; justify-content:center;"
+                                    title="Xóa ảnh">✕</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SEAT CONFIGURATION -->
+                    <div style="background:#f8fafc; border:1px solid var(--border-color); border-radius:8px; padding:1.25rem; margin-bottom:1.5rem;">
+                        <label style="display:flex; align-items:center; gap:0.5rem; font-weight:700; cursor:pointer;">
+                            <input type="checkbox" id="create-hasSeatMap" onchange="toggleCreateSeatMapInputs(this.checked)">
+                            Áp dụng Sơ đồ Chọn Ghế Ngồi Cố Định (Seat Map)
+                        </label>
+
+                        <div id="create-seat-map-config"
+                            style="display:none; margin-top:1rem; grid-template-columns:1fr 1fr; gap:1rem;">
+                            <div class="form-group">
+                                <label for="create-seatRows">Số hàng ghế (Rows)</label>
+                                <input type="number" id="create-seatRows" class="form-control" min="1" max="26" value="5"
+                                    placeholder="Tối đa 26 hàng (A - Z)">
+                            </div>
+                            <div class="form-group">
+                                <label for="create-seatCols">Số ghế mỗi hàng (Cols)</label>
+                                <input type="number" id="create-seatCols" class="form-control" min="1" max="30" value="10"
+                                    placeholder="Tối đa 30 ghế (1 - 30)">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label for="create-event-desc">Mô tả sự kiện</label>
+                        <textarea id="create-event-desc" class="form-control" rows="4"
+                            placeholder="Thông tin chi tiết về sự kiện..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline btn-sm" onclick="closeCreateEventModal()">Hủy</button>
+                    <button type="submit" id="create-event-submit-btn" class="btn btn-primary btn-sm">Tạo Sự Kiện</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ====================================================================
+         EVENT EDIT MODAL (SỬA THÔNG TIN SỰ KIỆN - GIỐNG ADMIN)
+         ==================================================================== -->
+    <div id="event-edit-modal" class="modal-overlay">
+        <div class="modal-box modal-box-lg">
+            <div class="modal-header">
+                <h3>Chỉnh Sửa Thông Tin Sự Kiện</h3>
+                <button type="button" class="modal-close" onclick="closeEditEventModal()">&times;</button>
+            </div>
+            <form id="event-edit-form" onsubmit="saveEventEdit(event)">
+                <div class="modal-body modal-body-scrollable">
+                    <input type="hidden" id="edit-event-id">
+
+                    <div class="form-group">
+                        <label for="edit-event-title">Tên sự kiện *</label>
+                        <input type="text" id="edit-event-title" class="form-control" placeholder="Tên sự kiện"
+                            required>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="edit-event-category">Danh mục *</label>
+                            <select id="edit-event-category" class="form-control" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-event-status">Trạng thái *</label>
+                            <select id="edit-event-status" class="form-control" required>
+                                <option value="DRAFT">Chờ duyệt (Nháp)</option>
+                                <option value="OPEN_FOR_REGISTRATION">Đang mở đăng ký</option>
+                                <option value="FULL">Đã đủ chỗ</option>
+                                <option value="ONGOING">Đang diễn ra</option>
+                                <option value="COMPLETED">Đã kết thúc</option>
+                                <option value="CANCELLED">Đã hủy</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="edit-event-start">Thời gian bắt đầu *</label>
+                            <input type="datetime-local" id="edit-event-start" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-event-end">Thời gian kết thúc *</label>
+                            <input type="datetime-local" id="edit-event-end" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-event-location">Địa điểm tổ chức *</label>
+                        <input type="text" id="edit-event-location" class="form-control" placeholder="Địa chỉ sự kiện"
+                            required>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="edit-event-max">Số lượng người tham gia tối đa *</label>
+                            <input type="number" id="edit-event-max" class="form-control" min="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-event-budget">Kinh phí dự kiến (VNĐ)</label>
+                            <input type="number" id="edit-event-budget" class="form-control" placeholder="Ví dụ: 15000000"
+                                min="0" step="any">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Ảnh sự kiện (Banner)</label>
+                        <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
+                            <input type="file" id="edit-event-banner-file" accept="image/*" style="display:none;"
+                                onchange="handleAdminBannerUpload(this)">
+                            <button type="button" class="btn btn-outline btn-sm"
+                                onclick="document.getElementById('edit-event-banner-file').click()">
+                                📁 Tải ảnh lên từ máy
+                            </button>
+                            <span id="edit-event-banner-status"
+                                style="font-size:0.85rem; color:var(--text-secondary);">Chưa có ảnh</span>
+                        </div>
+                        <input type="hidden" id="edit-event-banner">
+                        <div id="edit-event-banner-preview-box" style="margin-top:0.75rem; display:none;">
+                            <div style="position:relative; display:inline-block; max-width:100%;">
+                                <img id="edit-event-banner-preview" src="" alt="Banner Preview"
+                                    style="max-height:160px; max-width:100%; border-radius:8px; border:1px solid var(--border-color); object-fit:cover; display:block;">
+                                <button type="button" onclick="removeAdminBanner()"
+                                    style="position:absolute; top:6px; right:6px; background:rgba(0,0,0,0.65); color:#fff; border:none; border-radius:50%; width:26px; height:26px; cursor:pointer; font-size:13px; display:flex; align-items:center; justify-content:center;"
+                                    title="Xóa ảnh">✕</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label for="edit-event-desc">Mô tả sự kiện</label>
+                        <textarea id="edit-event-desc" class="form-control" rows="4"
+                            placeholder="Thông tin chi tiết về sự kiện..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline btn-sm" onclick="closeEditEventModal()">Hủy</button>
+                    <button type="submit" id="edit-event-submit-btn" class="btn btn-primary btn-sm">Lưu Thay Đổi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js"></script>
+    <script>
+        requireAuth(['ROLE_ORGANIZER']);
+
+        let allEventsData = [];
+        let allCategoriesData = [];
+
+        async function loadCategories() {
+            try {
+                allCategoriesData = await apiCall('/categories');
+            } catch (err) {
+                console.error('Không thể tải danh mục:', err);
+            }
+        }
+
+        async function loadEvents() {
+            try {
+                const user = getUser();
+                if (user) {
+                    document.getElementById('user-name-display').textContent = `Ban Tổ Chức: ${user.fullName || user.username}`;
+                }
+
+                allEventsData = await apiCall('/organizer/events/my');
+                renderEventsTable(allEventsData);
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        function renderEventsTable(events) {
+            const tbody = document.getElementById('approval-table-body');
+            if (!tbody) return;
+
+            if (!events || events.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:2rem;">Không có sự kiện nào.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = events.map(e => {
+                const safeTitle = (e.title || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+
+                return `
+                    <tr>
+                        <td><strong>${e.title}</strong></td>
+                        <td>${e.categoryName || '-'}</td>
+                        <td>${e.organizerName || '-'}</td>
+                        <td style="font-size:0.85rem;">${formatDateTime(e.startTime)}</td>
+                        <td style="text-align:center;"><strong>${e.registeredAttendees}</strong> / ${e.maxAttendees}</td>
+                        <td style="text-align:center;"><span class="badge ${getStatusBadge(e.status)}">${e.statusText}</span></td>
+                        <td style="text-align:center;">
+                            <div style="display:inline-flex; gap:0.4rem; align-items:center; justify-content:center; flex-wrap:wrap;">
+                                <button onclick="openEditEventModal(${e.id})" class="btn btn-outline btn-sm">Sửa</button>
+                                <button onclick="deleteEvent(${e.id}, '${safeTitle}')" class="btn btn-outline btn-sm" style="color:var(--danger); border-color:var(--danger);">Xóa</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function filterEventsTable() {
+            const status = document.getElementById('filter-event-status').value;
+            if (!status) {
+                renderEventsTable(allEventsData);
+            } else {
+                renderEventsTable(allEventsData.filter(e => e.status === status));
+            }
+        }
+
+        function getStatusBadge(status) {
+            return status === 'OPEN_FOR_REGISTRATION' ? 'badge-open' :
+                status === 'FULL' ? 'badge-full' :
+                    status === 'ONGOING' ? 'badge-ongoing' :
+                        status === 'COMPLETED' ? 'badge-completed' : 'badge-draft';
+        }
+
+        function openEditEventModal(id) {
+            const ev = allEventsData.find(e => e.id === id);
+            if (!ev) return;
+
+            document.getElementById('edit-event-id').value = ev.id;
+            document.getElementById('edit-event-title').value = ev.title || '';
+            document.getElementById('edit-event-location').value = ev.location || '';
+            document.getElementById('edit-event-max').value = ev.maxAttendees || 50;
+            document.getElementById('edit-event-budget').value = ev.estimatedBudget != null ? ev.estimatedBudget : '';
+            document.getElementById('edit-event-desc').value = ev.description || '';
+            document.getElementById('edit-event-status').value = ev.status || 'DRAFT';
+
+            // Banner
+            const bannerVal = ev.bannerUrl || '';
+            document.getElementById('edit-event-banner').value = bannerVal;
+            const previewBox = document.getElementById('edit-event-banner-preview-box');
+            const previewImg = document.getElementById('edit-event-banner-preview');
+            const statusEl = document.getElementById('edit-event-banner-status');
+            const fileInput = document.getElementById('edit-event-banner-file');
+            if (fileInput) fileInput.value = '';
+
+            if (bannerVal) {
+                previewImg.src = bannerVal;
+                previewBox.style.display = 'block';
+                statusEl.textContent = 'Đã có ảnh sự kiện';
+                statusEl.style.color = 'var(--text-secondary)';
+            } else {
+                previewBox.style.display = 'none';
+                previewImg.src = '';
+                statusEl.textContent = 'Chưa có ảnh';
+                statusEl.style.color = 'var(--text-secondary)';
+            }
+
+            // Populate categories
+            const catSelect = document.getElementById('edit-event-category');
+            catSelect.innerHTML = (allCategoriesData || []).map(c =>
+                `<option value="${c.id}" ${c.id === ev.categoryId ? 'selected' : ''}>${c.name}</option>`
+            ).join('');
+
+            // Format datetime-local (YYYY-MM-DDTHH:mm)
+            if (ev.startTime) {
+                document.getElementById('edit-event-start').value = ev.startTime.slice(0, 16);
+            }
+            if (ev.endTime) {
+                document.getElementById('edit-event-end').value = ev.endTime.slice(0, 16);
+            }
+
+            document.getElementById('event-edit-modal').style.display = 'flex';
+        }
+
+        async function handleBannerUpload(input) {
+            if (!input.files || input.files.length === 0) return;
+            const file = input.files[0];
+            const statusEl = document.getElementById('edit-event-banner-status');
+            const previewBox = document.getElementById('edit-event-banner-preview-box');
+            const previewImg = document.getElementById('edit-event-banner-preview');
+            const bannerInput = document.getElementById('edit-event-banner');
+
+            statusEl.textContent = '⏳ Đang tải ảnh lên...';
+            statusEl.style.color = 'var(--text-secondary)';
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch('/api/upload', {
+                    method: 'POST',
+                    headers: token ? { 'Authorization': 'Bearer ' + token } : {},
+                    body: formData
+                });
+
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    throw new Error(errData.message || 'Lỗi khi tải ảnh lên');
+                }
+
+                const data = await res.json();
+                bannerInput.value = data.url;
+                previewImg.src = data.url;
+                previewBox.style.display = 'block';
+                statusEl.textContent = '✅ Đã tải ảnh lên thành công';
+                statusEl.style.color = '#10b981';
+            } catch (err) {
+                statusEl.textContent = '❌ ' + err.message;
+                statusEl.style.color = '#ef4444';
+            }
+        }
+
+        async function handleAdminBannerUpload(input) {
+            await handleBannerUpload(input);
+        }
+
+        function removeBanner() {
+            document.getElementById('edit-event-banner').value = '';
+            const fileInput = document.getElementById('edit-event-banner-file');
+            if (fileInput) fileInput.value = '';
+            document.getElementById('edit-event-banner-preview-box').style.display = 'none';
+            document.getElementById('edit-event-banner-preview').src = '';
+            const statusEl = document.getElementById('edit-event-banner-status');
+            statusEl.textContent = 'Đã xóa ảnh';
+            statusEl.style.color = 'var(--text-secondary)';
+        }
+
+        function removeAdminBanner() {
+            removeBanner();
+        }
+
+        function closeEditEventModal() {
+            document.getElementById('event-edit-modal').style.display = 'none';
+        }
+
+        async function saveEventEdit(e) {
+            e.preventDefault();
+            const id = document.getElementById('edit-event-id').value;
+            const startVal = document.getElementById('edit-event-start').value;
+            const endVal = document.getElementById('edit-event-end').value;
+
+            if (new Date(endVal) <= new Date(startVal)) {
+                showToast('Thời gian kết thúc phải sau thời gian bắt đầu!', 'error');
+                return;
+            }
+
+            const payload = {
+                title: document.getElementById('edit-event-title').value.trim(),
+                categoryId: parseInt(document.getElementById('edit-event-category').value),
+                status: document.getElementById('edit-event-status').value,
+                startTime: startVal,
+                endTime: endVal,
+                location: document.getElementById('edit-event-location').value.trim(),
+                maxAttendees: parseInt(document.getElementById('edit-event-max').value),
+                estimatedBudget: document.getElementById('edit-event-budget') && document.getElementById('edit-event-budget').value ? parseFloat(document.getElementById('edit-event-budget').value) : 0,
+                bannerUrl: document.getElementById('edit-event-banner').value.trim(),
+                description: document.getElementById('edit-event-desc').value.trim()
+            };
+
+            const btn = document.getElementById('edit-event-submit-btn');
+            try {
+                btn.disabled = true;
+                btn.textContent = 'Đang lưu...';
+                await apiCall(`/organizer/events/${id}`, 'PUT', payload);
+                showToast('Cập nhật sự kiện thành công!', 'success');
+                closeEditEventModal();
+                loadEvents();
+            } catch (err) {
+                showToast(err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Lưu Thay Đổi';
+            }
+        }
+
+        async function deleteEvent(id, title) {
+            if (!confirm(`Bạn có chắc chắn muốn xóa sự kiện "${title}" không?\n\nLƯU Ý: Toàn bộ danh sách đăng ký, vé tham dự, sơ đồ chỗ ngồi và đánh giá của sự kiện này sẽ bị xóa vĩnh viễn!`)) {
+                return;
+            }
+
+            try {
+                await apiCall(`/organizer/events/${id}`, 'DELETE');
+                showToast('Đã xóa sự kiện thành công!', 'success');
+                loadEvents();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+
+        // ====================================================================
+        // TẠO SỰ KIỆN MỚI
+        // ====================================================================
+        function openCreateEventModal() {
+            const form = document.getElementById('event-create-form');
+            if (form) form.reset();
+
+            const catSelect = document.getElementById('create-event-category');
+            if (catSelect) {
+                catSelect.innerHTML = '<option value="">-- Chọn danh mục sự kiện --</option>' + (allCategoriesData || []).map(c =>
+                    `<option value="${c.id}">${c.name}</option>`
+                ).join('');
+            }
+
+            document.getElementById('create-event-banner').value = '';
+            const previewBox = document.getElementById('create-event-banner-preview-box');
+            if (previewBox) previewBox.style.display = 'none';
+            const previewImg = document.getElementById('create-event-banner-preview');
+            if (previewImg) previewImg.src = '';
+            const bannerStatus = document.getElementById('create-event-banner-status');
+            if (bannerStatus) {
+                bannerStatus.textContent = 'Chưa có ảnh';
+                bannerStatus.style.color = 'var(--text-secondary)';
+            }
+            const bannerFileInput = document.getElementById('create-event-banner-file');
+            if (bannerFileInput) bannerFileInput.value = '';
+
+            const chkSeat = document.getElementById('create-hasSeatMap');
+            if (chkSeat) chkSeat.checked = false;
+            const seatMapConfig = document.getElementById('create-seat-map-config');
+            if (seatMapConfig) seatMapConfig.style.display = 'none';
+
+            document.getElementById('event-create-modal').style.display = 'flex';
+        }
+
+        function closeCreateEventModal() {
+            document.getElementById('event-create-modal').style.display = 'none';
+        }
+
+        async function handleCreateBannerUpload(input) {
+            if (!input.files || input.files.length === 0) return;
+            const file = input.files[0];
+            const statusEl = document.getElementById('create-event-banner-status');
+            const previewBox = document.getElementById('create-event-banner-preview-box');
+            const previewImg = document.getElementById('create-event-banner-preview');
+            const bannerInput = document.getElementById('create-event-banner');
+
+            statusEl.textContent = '⏳ Đang tải ảnh lên...';
+            statusEl.style.color = 'var(--text-secondary)';
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch('/api/upload', {
+                    method: 'POST',
+                    headers: token ? { 'Authorization': 'Bearer ' + token } : {},
+                    body: formData
+                });
+
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    throw new Error(errData.message || 'Lỗi khi tải ảnh lên');
+                }
+
+                const data = await res.json();
+                bannerInput.value = data.url;
+                previewImg.src = data.url;
+                previewBox.style.display = 'block';
+                statusEl.textContent = '✅ Đã tải ảnh lên';
+                statusEl.style.color = '#10b981';
+            } catch (err) {
+                statusEl.textContent = '❌ ' + err.message;
+                statusEl.style.color = '#ef4444';
+            }
+        }
+
+        function removeCreateBanner() {
+            document.getElementById('create-event-banner').value = '';
+            const fileInput = document.getElementById('create-event-banner-file');
+            if (fileInput) fileInput.value = '';
+            document.getElementById('create-event-banner-preview-box').style.display = 'none';
+            document.getElementById('create-event-banner-preview').src = '';
+            const statusEl = document.getElementById('create-event-banner-status');
+            statusEl.textContent = 'Đã xóa ảnh';
+            statusEl.style.color = 'var(--text-secondary)';
+        }
+
+        function toggleCreateSeatMapInputs(checked) {
+            document.getElementById('create-seat-map-config').style.display = checked ? 'grid' : 'none';
+        }
+
+        async function handleCreateEvent(e) {
+            e.preventDefault();
+            const btn = document.getElementById('create-event-submit-btn');
+
+            const startTime = document.getElementById('create-event-start').value;
+            const endTime = document.getElementById('create-event-end').value;
+
+            if (new Date(startTime) >= new Date(endTime)) {
+                showToast('Thời gian kết thúc phải sau thời gian bắt đầu', 'warning');
+                return;
+            }
+
+            const catId = parseInt(document.getElementById('create-event-category').value);
+            if (!catId) {
+                showToast('Vui lòng chọn danh mục sự kiện', 'warning');
+                return;
+            }
+
+            const hasSeatMap = document.getElementById('create-hasSeatMap').checked;
+            const rows = hasSeatMap ? parseInt(document.getElementById('create-seatRows').value) : 0;
+            const cols = hasSeatMap ? parseInt(document.getElementById('create-seatCols').value) : 0;
+
+            const payload = {
+                title: document.getElementById('create-event-title').value.trim(),
+                categoryId: catId,
+                location: document.getElementById('create-event-location').value.trim(),
+                startTime: startTime,
+                endTime: endTime,
+                maxAttendees: parseInt(document.getElementById('create-event-max').value),
+                estimatedBudget: document.getElementById('create-event-budget') && document.getElementById('create-event-budget').value ? parseFloat(document.getElementById('create-event-budget').value) : 0,
+                bannerUrl: document.getElementById('create-event-banner').value.trim() || null,
+                description: document.getElementById('create-event-desc').value.trim(),
+                hasSeatMap: hasSeatMap,
+                seatRows: rows,
+                seatCols: cols
+            };
+
+            try {
+                btn.disabled = true;
+                btn.textContent = 'Đang lưu sự kiện...';
+
+                await apiCall('/organizer/events', 'POST', payload);
+                showToast('Tạo sự kiện thành công! Trạng thái: Nháp (chờ Admin duyệt)', 'success');
+                closeCreateEventModal();
+                await loadEvents();
+            } catch (err) {
+                showToast(err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Tạo Sự Kiện';
+            }
+        }
+
+        window.onclick = function (e) {
+            const editModal = document.getElementById('event-edit-modal');
+            const createModal = document.getElementById('event-create-modal');
+            if (e.target === editModal) closeEditEventModal();
+            if (e.target === createModal) closeCreateEventModal();
+        };
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadCategories();
+            await loadEvents();
+        });
+    </script>
+</body>
+
+</html>

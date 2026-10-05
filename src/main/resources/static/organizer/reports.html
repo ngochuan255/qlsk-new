@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Báo Cáo & Thống Kê Sự Kiện</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <style>
+        .form-control {
+            width: 100%;
+            padding: 0.65rem 0.9rem;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            background-color: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            outline: none;
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary) !important;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12) !important;
+        }
+
+        .stats-grid-5 {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 1rem;
+        }
+
+        .stats-grid-5 .stat-card {
+            padding: 1.25rem 1rem;
+        }
+
+        @media (max-width: 992px) {
+            .stats-grid-5 {
+                overflow-x: auto;
+                grid-template-columns: repeat(5, minmax(160px, 1fr));
+                padding-bottom: 0.5rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-layout">
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <span class="brand-badge">BTC</span>
+                Event Manager
+            </div>
+            <ul class="sidebar-menu">
+                <li><a href="/organizer/index.html">Tổng quan</a></li>
+                <li><a href="/organizer/events.html">Quản lý sự kiện</a></li>
+                <li><a href="/organizer/event-list.html">Danh sách sự kiện</a></li>
+                <li><a href="/organizer/checkin.html">Check-in Mã QR</a></li>
+                <li><a href="/organizer/reports.html" class="active">Báo cáo và thống kê</a></li>
+                <li><a href="/organizer/profile.html">Thông tin cá nhân</a></li>
+                <li><a href="/">Xem trang chủ</a></li>
+                <li style="margin-top: 0.5rem;">
+                    <button onclick="logout()" class="btn btn-outline btn-sm"
+                        style="color:white; border-color:#334155; width:100%; padding:0.65rem 1rem;">Đăng xuất</button>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- MAIN -->
+        <main class="main-content">
+            <div class="top-bar">
+                <h1 class="page-title">Báo Cáo Hiệu Quả & Thống Kê Sự Kiện</h1>
+            </div>
+
+            <div class="content-body">
+                <div class="card" style="margin-bottom:2rem;">
+                    <label for="event-selector" style="font-weight:700; display:block; margin-bottom:0.5rem;">Chọn Sự
+                        Kiện Cần Xem Báo Cáo:</label>
+                    <select id="event-selector" class="form-control"
+                        style="max-width:500px; padding:0.65rem 0.9rem; border-radius:8px; cursor:pointer;"
+                        onchange="loadAllReports(this.value)">
+                        <option value="">-- Đang tải sự kiện --</option>
+                    </select>
+                </div>
+
+                <!-- 1. BÁO CÁO THAM DỰ (3.7 & 3.10) -->
+                <h2 style="font-size:1.3rem; font-weight:800; margin-bottom:1rem;">1. Thống Kê Tỷ Lệ Tham Dự</h2>
+                <div class="stats-grid stats-grid-5">
+                    <div class="stat-card">
+                        <span class="stat-label">Tổng Số Chỗ</span>
+                        <div id="stat-total-seats" class="stat-value">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">Tổng Đăng Ký</span>
+                        <div id="stat-total-reg" class="stat-value" style="color:var(--primary);">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">Đã Check-in Thực Tế</span>
+                        <div id="stat-checked-in" class="stat-value" style="color:var(--success);">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">Vắng Mặt</span>
+                        <div id="stat-absent" class="stat-value" style="color:var(--danger);">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">Tỷ Lệ Tham Dự</span>
+                        <div id="stat-rate" class="stat-value" style="color:var(--primary);">- %</div>
+                    </div>
+                </div>
+
+                <!-- 2. BÁO CÁO KINH PHÍ (3.8 & 3.10) -->
+                <h2 style="font-size:1.3rem; font-weight:800; margin:2rem 0 1rem;">2. Báo Cáo & Quản Lý Kinh Phí</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <span class="stat-label">Kinh Phí Dự Kiến</span>
+                        <div id="fin-estimated" class="stat-value">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">Đã Sử Dụng</span>
+                        <div id="fin-used" class="stat-value" style="color:var(--danger);">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">Số Dư Còn Lại</span>
+                        <div id="fin-remaining" class="stat-value" style="color:var(--success);">-</div>
+                    </div>
+                </div>
+
+                <!-- EXPENSES TABLE & ADD FORM -->
+                <div class="card" style="margin-bottom:2rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+                        <h3 style="font-size:1.1rem; font-weight:700; margin:0;">Danh Sách Khoản Chi Thực Tế</h3>
+                        <button class="btn btn-primary btn-sm" onclick="toggleExpenseForm()">Thêm khoản chi</button>
+                    </div>
+
+                    <div id="add-expense-box"
+                        style="display:none; background:#f8fafc; padding:1.5rem; border-radius:var(--radius-lg); margin-bottom:1.5rem; border:1px solid var(--border-color); box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; border-bottom:1px solid var(--border-color); padding-bottom:0.75rem;">
+                            <h4 style="font-size:1.05rem; font-weight:700; margin:0; color:var(--text-primary);">Thêm Khoản Chi Mới</h4>
+                            <button type="button" onclick="toggleExpenseForm(false)" style="background:none; border:none; font-size:1.35rem; cursor:pointer; color:var(--text-muted); line-height:1;" title="Đóng">&times;</button>
+                        </div>
+                        <form id="expense-form">
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.25rem; margin-bottom:1.25rem;">
+                                <div>
+                                    <label style="display:block; font-size:0.85rem; font-weight:600; margin-bottom:0.4rem;">Tên khoản chi *</label>
+                                    <input type="text" id="exp-title" class="form-control"
+                                        placeholder="Ví dụ: Thuê âm thanh, ánh sáng, in ấn..." required>
+                                </div>
+                                <div>
+                                    <label style="display:block; font-size:0.85rem; font-weight:600; margin-bottom:0.4rem;">Số tiền (VNĐ) *</label>
+                                    <input type="number" id="exp-amount" class="form-control" placeholder="Ví dụ: 2000000" min="1"
+                                        required>
+                                </div>
+                            </div>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.25rem; margin-bottom:1.25rem;">
+                                <div>
+                                    <label style="display:block; font-size:0.85rem; font-weight:600; margin-bottom:0.4rem;">Ngày chi *</label>
+                                    <input type="date" id="exp-date" class="form-control" required>
+                                </div>
+                                <div>
+                                    <label style="display:block; font-size:0.85rem; font-weight:600; margin-bottom:0.4rem;">Ghi chú / Diễn giải thêm</label>
+                                    <input type="text" id="exp-desc" class="form-control"
+                                        placeholder="Chi tiết hóa đơn hoặc diễn giải khoản chi...">
+                                </div>
+                            </div>
+                            <div style="display:flex; justify-content:flex-end; gap:0.75rem; border-top:1px solid var(--border-color); padding-top:1rem;">
+                                <button type="button" class="btn btn-outline btn-sm" onclick="toggleExpenseForm(false)">Hủy</button>
+                                <button type="submit" id="btn-save-expense" class="btn btn-primary btn-sm">Lưu khoản chi</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="table-wrapper" style="overflow-x:auto;">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Khoản Chi</th>
+                                    <th>Số Tiền</th>
+                                    <th>Ngày Chi</th>
+                                    <th>Người Tạo</th>
+                                    <th style="text-align:center; width:100px;">Hành Động</th>
+                                </tr>
+                            </thead>
+                            <tbody id="expenses-table-body">
+                                <tr>
+                                    <td colspan="5" style="text-align:center;">Chưa có khoản chi nào</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 3. BÁO CÁO ĐÁNH GIÁ (3.9 & 3.10) -->
+                <h2 style="font-size:1.3rem; font-weight:800; margin:2rem 0 1rem;">3. Báo Cáo Đánh Giá & Sự Hài Lòng</h2>
+                <div class="card">
+                    <div style="display:flex; align-items:center; gap:2rem; margin-bottom:1.5rem;">
+                        <div style="text-align:center; padding-right:2rem; border-right:1px solid var(--border-color);">
+                            <div id="avg-score" style="font-size:3rem; font-weight:800; color:#f59e0b;">-</div>
+                            <div style="font-size:0.85rem; color:var(--text-secondary);">Điểm đánh giá trung bình</div>
+                            <div id="total-reviews-count" style="font-size:0.85rem; font-weight:600; margin-top:4px;">-</div>
+                        </div>
+                        <div id="rating-bars" style="flex:1;">
+                            <!-- Distribution bars will be rendered here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js"></script>
+    <script>
+        requireAuth(['ROLE_ORGANIZER']);
+
+        let currentSelectedEventId = null;
+
+        async function initPage() {
+            try {
+                const events = await apiCall('/organizer/events/my');
+                const sel = document.getElementById('event-selector');
+                sel.innerHTML = '<option value="">-- Chọn sự kiện --</option>';
+
+                events.forEach(e => {
+                    const opt = document.createElement('option');
+                    opt.value = e.id;
+                    opt.textContent = `${e.title} (${e.statusText})`;
+                    sel.appendChild(opt);
+                });
+
+                if (events.length > 0) {
+                    sel.selectedIndex = 1;
+                    loadAllReports(events[0].id);
+                }
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function loadAllReports(eventId) {
+            if (!eventId) return;
+            currentSelectedEventId = eventId;
+
+            // 1. Attendance
+            try {
+                const att = await apiCall(`/reports/event/${eventId}/attendance`);
+                document.getElementById('stat-total-seats').textContent = att.totalSeats;
+                document.getElementById('stat-total-reg').textContent = att.totalRegistered;
+                document.getElementById('stat-checked-in').textContent = att.totalCheckedIn;
+                document.getElementById('stat-absent').textContent = att.totalAbsent;
+                document.getElementById('stat-rate').textContent = `${att.attendanceRate}%`;
+            } catch (e) {
+                console.error(e);
+            }
+
+            // 2. Financial
+            try {
+                const fin = await apiCall(`/reports/event/${eventId}/financial`);
+                document.getElementById('fin-estimated').textContent = formatCurrency(fin.estimatedBudget);
+                document.getElementById('fin-used').textContent = formatCurrency(fin.totalUsedBudget);
+                document.getElementById('fin-remaining').textContent = formatCurrency(fin.remainingBudget);
+
+                const tbody = document.getElementById('expenses-table-body');
+                if (fin.expenses && fin.expenses.length > 0) {
+                    tbody.innerHTML = fin.expenses.map(x => {
+                        const safeTitle = (x.title || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                        return `
+                            <tr>
+                                <td>
+                                    <strong>${x.title}</strong>
+                                    ${x.description ? `<div style="font-size:0.8rem; color:var(--text-secondary); margin-top:2px;">${x.description}</div>` : ''}
+                                </td>
+                                <td style="color:var(--danger); font-weight:700;">${formatCurrency(x.amount)}</td>
+                                <td>${x.expenseDate}</td>
+                                <td>${x.createdByName || '-'}</td>
+                                <td style="text-align:center;">
+                                    <button onclick="deleteExpenseItem(${x.id}, '${safeTitle}')" class="btn btn-outline btn-sm" style="color:var(--danger); border-color:var(--danger); padding:0.25rem 0.6rem; font-size:0.8rem;">Xóa</button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:1.5rem;">Chưa có khoản chi nào</td></tr>';
+                }
+            } catch (e) {
+                console.error(e);
+            }
+
+            // 3. Feedback
+            try {
+                const fb = await apiCall(`/reports/event/${eventId}/feedback`);
+                document.getElementById('avg-score').textContent = fb.averageRating > 0 ? fb.averageRating : '0.0';
+                document.getElementById('total-reviews-count').textContent = `${fb.totalReviews} lượt đánh giá`;
+
+                const bars = document.getElementById('rating-bars');
+                let html = '';
+                for (let star = 5; star >= 1; star--) {
+                    const count = fb.ratingDistribution[star] || 0;
+                    const pct = fb.totalReviews > 0 ? (count / fb.totalReviews * 100).toFixed(0) : 0;
+                    html += `
+                        <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.4rem; font-size:0.85rem;">
+                            <span style="width:50px;">${star} sao</span>
+                            <div style="flex:1; height:8px; background:#e2e8f0; border-radius:4px; overflow:hidden;">
+                                <div style="width:${pct}%; height:100%; background:#f59e0b;"></div>
+                            </div>
+                            <span style="width:40px; color:var(--text-muted); text-align:right;">${count}</span>
+                        </div>
+                    `;
+                }
+                bars.innerHTML = html;
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function toggleExpenseForm(forceState) {
+            if (!currentSelectedEventId && forceState !== false) {
+                showToast('Vui lòng chọn sự kiện cần thêm khoản chi trước!', 'warning');
+                document.getElementById('event-selector').focus();
+                return;
+            }
+            const b = document.getElementById('add-expense-box');
+            const show = typeof forceState === 'boolean' ? forceState : (b.style.display === 'none');
+            b.style.display = show ? 'block' : 'none';
+            if (show) {
+                document.getElementById('exp-title').focus();
+            }
+        }
+
+        document.getElementById('expense-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!currentSelectedEventId) {
+                showToast('Vui lòng chọn sự kiện cần thêm khoản chi trước!', 'warning');
+                return;
+            }
+
+            const title = document.getElementById('exp-title').value.trim();
+            const amount = parseFloat(document.getElementById('exp-amount').value);
+            const date = document.getElementById('exp-date').value;
+            const desc = document.getElementById('exp-desc').value.trim();
+
+            const saveBtn = document.getElementById('btn-save-expense');
+            try {
+                saveBtn.disabled = true;
+                saveBtn.textContent = 'Đang lưu...';
+                await apiCall('/organizer/expenses', 'POST', {
+                    eventId: Number(currentSelectedEventId),
+                    title: title,
+                    amount: amount,
+                    expenseDate: date,
+                    description: desc
+                });
+                showToast('Đã thêm khoản chi thành công', 'success');
+                document.getElementById('expense-form').reset();
+                document.getElementById('exp-date').value = new Date().toISOString().split('T')[0];
+                toggleExpenseForm(false);
+                loadAllReports(currentSelectedEventId);
+            } catch (err) {
+                showToast(err.message, 'error');
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Lưu khoản chi';
+            }
+        });
+
+        async function deleteExpenseItem(id, title) {
+            if (!confirm(`Bạn có chắc chắn muốn xóa khoản chi "${title}" không?`)) return;
+            try {
+                await apiCall(`/organizer/expenses/${id}`, 'DELETE');
+                showToast('Đã xóa khoản chi thành công', 'success');
+                loadAllReports(currentSelectedEventId);
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('exp-date').value = new Date().toISOString().split('T')[0];
+            initPage();
+        });
+    </script>
+</body>
+
+</html>

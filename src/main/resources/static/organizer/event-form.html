@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tạo Sự Kiện Mới - Ban Tổ Chức</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <style>
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .form-group label {
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .form-control {
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            font-size: 0.95rem;
+            outline: none;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-layout">
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <span class="brand-badge">BTC</span>
+                Event Manager
+            </div>
+            <ul class="sidebar-menu">
+                <li><a href="/organizer/index.html">Tổng quan</a></li>
+                <li><a href="/organizer/events.html">Quản lý sự kiện</a></li>
+                <li><a href="/organizer/event-list.html">Danh sách sự kiện</a></li>
+                <li><a href="/organizer/checkin.html">Check-in Mã QR</a></li>
+                <li><a href="/organizer/reports.html">Báo cáo và thống kê</a></li>
+                <li><a href="/organizer/profile.html">Thông tin cá nhân</a></li>
+                <li><a href="/">Xem trang chủ</a></li>
+                <li style="margin-top: 0.5rem;">
+                    <button onclick="logout()" class="btn btn-outline btn-sm"
+                        style="color:white; border-color:#334155; width:100%; padding:0.65rem 1rem;">Đăng xuất</button>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- MAIN -->
+        <main class="main-content">
+            <div class="top-bar">
+                <h1 class="page-title">Khởi Tạo Sự Kiện Mới</h1>
+            </div>
+
+            <div class="content-body">
+                <div class="card" style="max-width:860px; margin:0 auto;">
+                    <form id="event-create-form">
+                        <div class="form-group" style="margin-bottom:1.25rem;">
+                            <label for="title">Tên sự kiện *</label>
+                            <input type="text" id="title" class="form-control"
+                                placeholder="Ví dụ: Hội Thảo Trí Tuệ Nhân Tạo & Chuyển Đổi Số 2026" required>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="category">Danh mục sự kiện *</label>
+                                <select id="category" class="form-control" required></select>
+                            </div>
+                            <div class="form-group">
+                                <label for="location">Địa điểm tổ chức *</label>
+                                <input type="text" id="location" class="form-control"
+                                    placeholder="Hội trường A, Tầng 3..." required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="startTime">Thời gian bắt đầu *</label>
+                                <input type="datetime-local" id="startTime" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="endTime">Thời gian kết thúc *</label>
+                                <input type="datetime-local" id="endTime" class="form-control" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="maxAttendees">Số lượng người tham gia tối đa *</label>
+                                <input type="number" id="maxAttendees" class="form-control" min="1" value="50" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="budget">Kinh phí dự kiến (VNĐ)</label>
+                                <input type="number" id="budget" class="form-control" placeholder="Ví dụ: 15000000"
+                                    min="0" step="100000">
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom:1.5rem;">
+                            <label style="display:block; font-size:0.875rem; font-weight:600; margin-bottom:0.4rem;">Ảnh
+                                sự kiện (Banner)</label>
+                            <div style="display:flex; gap:0.75rem; align-items:center;">
+                                <input type="file" id="event-banner-file" accept="image/*" style="display:none;"
+                                    onchange="handleBannerUpload(this)">
+                                <button type="button" class="btn btn-outline btn-sm"
+                                    onclick="document.getElementById('event-banner-file').click()">
+                                    📁 Tải ảnh lên từ máy
+                                </button>
+                                <span id="event-banner-status"
+                                    style="font-size:0.85rem; color:var(--text-secondary);">Chưa có ảnh</span>
+                            </div>
+                            <input type="hidden" id="bannerUrl">
+                            <div id="event-banner-preview-box" style="margin-top:0.6rem; display:none;">
+                                <div style="position:relative; display:inline-block;">
+                                    <img id="event-banner-preview" src="" alt="Banner Preview"
+                                        style="max-height:140px; border-radius:6px; border:1px solid var(--border-color); object-fit:cover; display:block;">
+                                    <button type="button" onclick="removeBanner()"
+                                        style="position:absolute; top:4px; right:4px; background:rgba(0,0,0,0.65); color:#fff; border:none; border-radius:50%; width:24px; height:24px; cursor:pointer; font-size:12px; display:flex; align-items:center; justify-content:center;"
+                                        title="Xóa ảnh">✕</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SEAT CONFIGURATION -->
+                        <div
+                            style="background:#f8fafc; border:1px solid var(--border-color); border-radius:8px; padding:1.25rem; margin-bottom:1.5rem;">
+                            <label
+                                style="display:flex; align-items:center; gap:0.5rem; font-weight:700; cursor:pointer;">
+                                <input type="checkbox" id="hasSeatMap" onchange="toggleSeatMapInputs(this.checked)">
+                                Áp dụng Sơ đồ Chọn Ghế Ngồi Cố Định (Seat Map)
+                            </label>
+
+                            <div id="seat-map-config"
+                                style="display:none; margin-top:1rem; grid-template-columns:1fr 1fr; gap:1rem;">
+                                <div class="form-group">
+                                    <label for="seatRows">Số hàng ghế (Rows)</label>
+                                    <input type="number" id="seatRows" class="form-control" min="1" max="26" value="5"
+                                        placeholder="Tối đa 26 hàng (A - Z)">
+                                </div>
+                                <div class="form-group">
+                                    <label for="seatCols">Số ghế mỗi hàng (Cols)</label>
+                                    <input type="number" id="seatCols" class="form-control" min="1" max="30" value="10"
+                                        placeholder="Số ghế trên một hàng">
+                                </div>
+                                <div style="grid-column:1/-1; font-size:0.85rem; color:var(--text-secondary);">
+                                    ℹ️ Hệ thống sẽ tự động sinh mã ghế (A1, A2... B1...) và thiết lập 2 hàng đầu tiên là
+                                    hàng ghế VIP.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom:1.5rem;">
+                            <label for="description">Mô tả nội dung chương trình</label>
+                            <textarea id="description" class="form-control" rows="4"
+                                placeholder="Giới thiệu chương trình, diễn giả, lịch trình chi tiết..."></textarea>
+                        </div>
+
+                        <div style="display:flex; justify-content:flex-end; gap:1rem;">
+                            <a href="/organizer/events.html" class="btn btn-outline">Hủy</a>
+                            <button type="submit" id="submit-btn" class="btn btn-primary">Tạo Sự Kiện</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js"></script>
+    <script>
+        requireAuth(['ROLE_ORGANIZER']);
+
+        async function loadCategories() {
+            try {
+                const cats = await apiCall('/categories');
+                const sel = document.getElementById('category');
+                cats.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.id;
+                    opt.textContent = c.name;
+                    sel.appendChild(opt);
+                });
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function handleBannerUpload(input) {
+            if (!input.files || input.files.length === 0) return;
+            const file = input.files[0];
+            const statusEl = document.getElementById('event-banner-status');
+            const previewBox = document.getElementById('event-banner-preview-box');
+            const previewImg = document.getElementById('event-banner-preview');
+            const bannerInput = document.getElementById('bannerUrl');
+
+            statusEl.textContent = '⏳ Đang tải ảnh lên...';
+            statusEl.style.color = 'var(--text-secondary)';
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch('/api/upload', {
+                    method: 'POST',
+                    headers: token ? { 'Authorization': 'Bearer ' + token } : {},
+                    body: formData
+                });
+
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    throw new Error(errData.message || 'Lỗi khi tải ảnh lên');
+                }
+
+                const data = await res.json();
+                bannerInput.value = data.url;
+                previewImg.src = data.url;
+                previewBox.style.display = 'block';
+                statusEl.textContent = '✅ Đã tải ảnh lên';
+                statusEl.style.color = '#10b981';
+            } catch (err) {
+                statusEl.textContent = '❌ ' + err.message;
+                statusEl.style.color = '#ef4444';
+            }
+        }
+
+        function removeBanner() {
+            document.getElementById('bannerUrl').value = '';
+            const fileInput = document.getElementById('event-banner-file');
+            if (fileInput) fileInput.value = '';
+            document.getElementById('event-banner-preview-box').style.display = 'none';
+            document.getElementById('event-banner-preview').src = '';
+            const statusEl = document.getElementById('event-banner-status');
+            statusEl.textContent = 'Đã xóa ảnh';
+            statusEl.style.color = 'var(--text-secondary)';
+        }
+
+        function toggleSeatMapInputs(checked) {
+            document.getElementById('seat-map-config').style.display = checked ? 'grid' : 'none';
+        }
+
+        document.getElementById('event-create-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submit-btn');
+
+            const hasSeatMap = document.getElementById('hasSeatMap').checked;
+            const rows = hasSeatMap ? parseInt(document.getElementById('seatRows').value) : 0;
+            const cols = hasSeatMap ? parseInt(document.getElementById('seatCols').value) : 0;
+
+            const payload = {
+                title: document.getElementById('title').value.trim(),
+                categoryId: parseInt(document.getElementById('category').value),
+                location: document.getElementById('location').value.trim(),
+                startTime: document.getElementById('startTime').value,
+                endTime: document.getElementById('endTime').value,
+                maxAttendees: parseInt(document.getElementById('maxAttendees').value),
+                estimatedBudget: document.getElementById('budget') && document.getElementById('budget').value ? parseFloat(document.getElementById('budget').value) : 0,
+                bannerUrl: document.getElementById('bannerUrl').value.trim() || null,
+                description: document.getElementById('description').value.trim(),
+                hasSeatMap: hasSeatMap,
+                seatRows: rows,
+                seatCols: cols
+            };
+
+            try {
+                btn.disabled = true;
+                btn.textContent = 'Đang lưu sự kiện...';
+
+                await apiCall('/organizer/events', 'POST', payload);
+                showToast('Tạo sự kiện thành công! Trạng thái: Nháp (chờ Admin duyệt)', 'success');
+                setTimeout(() => {
+                    window.location.href = '/organizer/events.html';
+                }, 1200);
+
+            } catch (err) {
+                showToast(err.message, 'error');
+                btn.disabled = false;
+                btn.textContent = 'Tạo Sự Kiện';
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', loadCategories);
+    </script>
+</body>
+
+</html>

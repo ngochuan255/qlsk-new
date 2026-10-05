@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng Nhập - Hệ Thống QLSK</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .auth-container {
+            max-width: 440px;
+            margin: 4rem auto;
+            background: #ffffff;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-xl);
+            padding: 2.5rem;
+        }
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+        .form-group label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 0.4rem;
+            color: var(--text-primary);
+        }
+        .form-control {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .form-control:focus {
+            border-color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="brand">
+                <span class="brand-badge">QLSK</span>
+                EventHub Pro
+            </a>
+            <div id="nav-auth" class="nav-auth"></div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="auth-container">
+            <h2 style="font-size:1.75rem; font-weight:800; margin-bottom:0.5rem; text-align:center;">Đăng Nhập</h2>
+            <p style="color:var(--text-secondary); font-size:0.9rem; text-align:center; margin-bottom:2rem;">
+                Hệ thống Quản lý Sự kiện & Kiểm soát Tham dự
+            </p>
+
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="username">Tên đăng nhập hoặc Email</label>
+                    <input type="text" id="username" class="form-control" placeholder="Nhập username hoặc email" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Mật khẩu</label>
+                    <input type="password" id="password" class="form-control" placeholder="••••••••" required>
+                </div>
+
+                <button type="submit" id="submit-btn" class="btn btn-primary" style="width:100%; padding:0.8rem; margin-top:0.5rem;">
+                    Đăng Nhập
+                </button>
+            </form>
+
+            <div style="text-align:center; margin-top:1.25rem; font-size:0.9rem;">
+                Chưa có tài khoản? <a href="/register.html" style="color:var(--primary); font-weight:600; text-decoration:none;">Đăng ký ngay</a>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js"></script>
+    <script>
+
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const btn = document.getElementById('submit-btn');
+
+            try {
+                btn.disabled = true;
+                btn.textContent = 'Đang xác thực...';
+
+                const res = await apiCall('/auth/login', 'POST', {
+                    usernameOrEmail: username,
+                    password: password
+                });
+
+                saveAuth(res.accessToken, {
+                    id: res.userId,
+                    username: res.username,
+                    fullName: res.fullName,
+                    email: res.email,
+                    role: res.role
+                });
+
+                showToast('Đăng nhập thành công!', 'success');
+
+                setTimeout(() => {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const redirect = urlParams.get('redirect');
+                    if (redirect) {
+                        window.location.href = redirect;
+                    } else if (res.role === 'ROLE_ADMIN') {
+                        window.location.href = '/admin/index.html';
+                    } else if (res.role === 'ROLE_ORGANIZER') {
+                        window.location.href = '/organizer/index.html';
+                    } else {
+                        window.location.href = '/';
+                    }
+                }, 800);
+
+            } catch (err) {
+                showToast(err.message, 'error');
+                btn.disabled = false;
+                btn.textContent = 'Đăng Nhập';
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('expired') === 'true') {
+                showToast('Phiên đăng nhập trước đó đã hết hạn. Vui lòng đăng nhập lại.', 'info');
+            }
+        });
+    </script>
+</body>
+</html>

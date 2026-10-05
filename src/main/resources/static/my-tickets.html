@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vé Của Tôi - QR Code Tham Dự</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .tickets-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+            gap: 2rem;
+            margin-top: 1.5rem;
+        }
+        .ticket-card {
+            background: #ffffff;
+            border-radius: var(--radius-lg);
+            border: 2px dashed var(--border-color);
+            padding: 1.75rem;
+            position: relative;
+            box-shadow: var(--shadow-md);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        .ticket-qr {
+            width: 200px;
+            height: 200px;
+            margin: 1rem 0;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 8px;
+            background: #ffffff;
+        }
+        .ticket-meta {
+            width: 100%;
+            text-align: left;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+        .ticket-meta-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.4rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="brand">
+                <span class="brand-badge">QLSK</span>
+                EventHub Pro
+            </a>
+            <div id="nav-auth" class="nav-auth"></div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1 style="font-size:1.85rem; font-weight:800; margin-bottom:0.5rem;">Danh Sách Vé Của Bạn</h1>
+        <p style="color:var(--text-secondary); margin-bottom:1.5rem;">
+            Xuất trình mã QR khi đến sự kiện để Ban tổ chức quét check-in vào cửa nhanh chóng.
+        </p>
+
+        <div id="tickets-container" class="tickets-grid">
+            <p style="color:var(--text-muted); grid-column:1/-1;">Đang tải danh sách vé...</p>
+        </div>
+    </div>
+
+    <footer>
+        <p>© 2026 Hệ Thống Quản Lý Tổ Chức Sự Kiện và Kiểm Soát Tham Dự - QLSK System.</p>
+    </footer>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js?v=6"></script>
+    <script>
+        requireAuth(['ROLE_ATTENDEE']);
+
+        async function loadMyTickets() {
+            const container = document.getElementById('tickets-container');
+            try {
+                const tickets = await apiCall('/registrations/my-tickets');
+
+                if (tickets.length === 0) {
+                    container.innerHTML = `
+                        <div style="grid-column:1/-1; text-align:center; padding:3rem; background:white; border-radius:12px;">
+                            <p style="font-size:1.1rem; color:var(--text-secondary); margin-bottom:1rem;">Bạn chưa đăng ký tham gia sự kiện nào.</p>
+                            <a href="/" class="btn btn-primary">Khám phá sự kiện ngay</a>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = tickets.map(t => {
+                    const isCancelled = t.status === 'CANCELLED';
+                    const isCheckedIn = t.isCheckedIn;
+
+                    let statusBadge = `<span class="badge badge-open">Đã Xác Nhận</span>`;
+                    if (isCancelled) statusBadge = `<span class="badge badge-full">Đã Hủy</span>`;
+                    else if (isCheckedIn) statusBadge = `<span class="badge badge-completed">Đã Check-in</span>`;
+
+                    const qrContent = isCancelled ? `
+                        <div style="height:200px; display:flex; align-items:center; justify-content:center; color:var(--danger); font-weight:700;">
+                            Vé Đã Hủy
+                        </div>
+                    ` : `
+                        <img src="${t.qrCodeImageBase64}" class="ticket-qr" alt="Mã QR Check-in">
+                        <div style="font-family:monospace; font-size:0.75rem; color:var(--text-muted);">${t.qrCodeToken}</div>
+                    `;
+
+                    const cancelBtn = (!isCancelled && !isCheckedIn) ? `
+                        <button onclick="cancelTicket(${t.id})" class="btn btn-outline btn-sm" style="color:var(--danger); border-color:var(--danger); margin-top:1rem; width:100%;">
+                            Hủy Đăng Ký Vé
+                        </button>
+                    ` : '';
+
+                    return `
+                        <div class="ticket-card">
+                            <div style="width:100%; display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                                <span style="font-size:0.8rem; font-weight:700; color:var(--primary);">${t.registrationCode}</span>
+                                ${statusBadge}
+                            </div>
+                            <h3 style="font-size:1.2rem; font-weight:700; margin-bottom:0.5rem;">${t.eventTitle}</h3>
+                            <div style="font-size:0.85rem; color:var(--text-secondary);">Ghế ngồi: <strong style="color:var(--primary);">${t.seatCode}</strong></div>
+
+                            ${qrContent}
+
+                            <div class="ticket-meta">
+                                <div class="ticket-meta-row"><span>Thời gian:</span><strong>${formatDateTime(t.eventStartTime)}</strong></div>
+                                <div class="ticket-meta-row"><span>Địa điểm:</span><strong>${t.eventLocation}</strong></div>
+                                <div class="ticket-meta-row"><span>Người tham dự:</span><strong>${t.userName}</strong></div>
+                                <div class="ticket-meta-row"><span>Check-in:</span><strong>${isCheckedIn ? formatDateTime(t.checkInTime) : 'Chưa check-in'}</strong></div>
+                            </div>
+
+                            ${cancelBtn}
+                        </div>
+                    `;
+                }).join('');
+            } catch (err) {
+                container.innerHTML = `<p style="color:var(--danger); grid-column:1/-1;">Lỗi tải vé: ${err.message}</p>`;
+            }
+        }
+
+        async function cancelTicket(id) {
+            if (!confirm('Bạn có chắc chắn muốn hủy lượt đăng ký vé này? Chỗ ngồi của bạn sẽ được giải phóng cho người khác.')) return;
+
+            try {
+                await apiCall(`/registrations/${id}/cancel`, 'POST');
+                showToast('Hủy đăng ký vé thành công!', 'success');
+                loadMyTickets();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadMyTickets);
+    </script>
+</body>
+</html>

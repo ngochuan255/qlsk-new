@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kiểm Soát Check-in Mã QR - Ban Tổ Chức</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <!-- html5-qrcode library for fast browser camera scanner -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+</head>
+
+<body>
+    <div class="dashboard-layout">
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <span class="brand-badge">BTC</span>
+                Event Manager
+            </div>
+            <ul class="sidebar-menu">
+                <li><a href="/organizer/index.html">Tổng quan</a></li>
+                <li><a href="/organizer/events.html">Quản lý sự kiện</a></li>
+                <li><a href="/organizer/event-list.html">Danh sách sự kiện</a></li>
+                <li><a href="/organizer/checkin.html" class="active">Check-in Mã QR</a></li>
+                <li><a href="/organizer/reports.html">Báo cáo và thống kê</a></li>
+                <li><a href="/organizer/profile.html">Thông tin cá nhân</a></li>
+                <li><a href="/">Xem trang chủ</a></li>
+                <li style="margin-top: 0.5rem;">
+                    <button onclick="logout()" class="btn btn-outline btn-sm"
+                        style="color:white; border-color:#334155; width:100%; padding:0.65rem 1rem;">Đăng xuất</button>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="main-content">
+            <div class="top-bar">
+                <h1 class="page-title">Trạm Kiểm Soát Check-in Bằng Mã QR</h1>
+                <div id="user-display" style="font-weight:600;"></div>
+            </div>
+
+            <div class="content-body">
+                <div class="card" style="max-width:680px; margin:0 auto 2rem;">
+                    <div style="margin-bottom:1.5rem;">
+                        <label for="event-select" style="display:block; font-weight:700; margin-bottom:0.5rem;">Chọn Sự
+                            Kiện Cần Check-in:</label>
+                        <select id="event-select" class="form-control"
+                            style="width:100%; padding:0.75rem; font-size:1rem; border-radius:8px; border:1px solid var(--border-color);">
+                            <option value="">-- Đang tải danh sách sự kiện --</option>
+                        </select>
+                    </div>
+
+                    <!-- QR CAMERA SCANNER -->
+                    <div class="scanner-container">
+                        <div id="reader"></div>
+
+                        <div style="display:flex; gap:0.5rem; justify-content:center; margin-top:1rem;">
+                            <button id="start-cam-btn" class="btn btn-primary btn-sm" onclick="startScanner()">Bật
+                                Camera Quét QR</button>
+                            <button id="stop-cam-btn" class="btn btn-outline btn-sm" onclick="stopScanner()"
+                                style="display:none;">Tắt Camera</button>
+                        </div>
+
+                        <!-- MANUAL TOKEN INPUT FALLBACK -->
+                        <div style="margin-top:1.5rem; padding-top:1.25rem; border-top:1px dashed var(--border-color);">
+                            <span
+                                style="font-size:0.85rem; color:var(--text-secondary); display:block; margin-bottom:0.5rem;">Hoặc
+                                nhập mã Token / Mã vé thủ công:</span>
+                            <div style="display:flex; gap:0.5rem;">
+                                <input type="text" id="manual-token" class="form-control"
+                                    placeholder="Ví dụ: QLSK-EVT1-TKT..."
+                                    style="flex:1; padding:0.6rem; border:1px solid var(--border-color); border-radius:6px;">
+                                <button onclick="checkInManual()" class="btn btn-primary btn-sm">Xác Nhận</button>
+                            </div>
+                        </div>
+
+                        <!-- RESULT DISPLAY -->
+                        <div id="result-box" class="scan-result-box">
+                            <h3 id="result-title" style="font-size:1.15rem; font-weight:800; margin-bottom:0.5rem;">
+                            </h3>
+                            <div id="result-details" style="font-size:0.95rem; line-height:1.6;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js"></script>
+    <script>
+        requireAuth(['ROLE_ORGANIZER']);
+
+        let html5QrCode = null;
+        let isProcessing = false;
+
+        async function loadOrganizerEvents() {
+            const user = getUser();
+            document.getElementById('user-display').textContent = `Xin chào, ${user.fullName}`;
+
+            try {
+                const events = await apiCall('/organizer/events/my');
+                const select = document.getElementById('event-select');
+                select.innerHTML = '<option value="">-- Chọn sự kiện bạn đang điều hành --</option>';
+
+                events.forEach(e => {
+                    const opt = document.createElement('option');
+                    opt.value = e.id;
+                    opt.textContent = `${e.title} (${e.statusText})`;
+                    select.appendChild(opt);
+                });
+
+                if (events.length > 0) {
+                    select.selectedIndex = 1;
+                }
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function processCheckInToken(token) {
+            if (isProcessing) return;
+            const eventId = document.getElementById('event-select').value;
+            if (!eventId) {
+                showToast('Vui lòng chọn sự kiện trước khi quét!', 'error');
+                return;
+            }
+
+            isProcessing = true;
+            const box = document.getElementById('result-box');
+            const title = document.getElementById('result-title');
+            const details = document.getElementById('result-details');
+
+            try {
+                const res = await apiCall('/organizer/check-in', 'POST', {
+                    eventId: Number(eventId),
+                    qrCodeToken: token
+                });
+
+                box.style.display = 'block';
+                box.className = 'scan-result-box scan-result-success';
+                title.textContent = 'CHECK-IN HỢP LỆ & THÀNH CÔNG!';
+                details.innerHTML = `
+                    <div>Người tham dự: <strong>${res.attendeeName}</strong></div>
+                    <div>Email: <strong>${res.attendeeEmail}</strong></div>
+                    <div>Vị trí ghế: <strong style="color:var(--primary); font-size:1.1rem;">${res.seatCode}</strong></div>
+                    <div>Mã lượt đăng ký: <code>${res.registrationCode}</code></div>
+                    <div style="font-size:0.8rem; margin-top:4px;">Thời gian: ${formatDateTime(res.checkInTime)}</div>
+                `;
+
+                showToast('Check-in thành công: ' + res.attendeeName, 'success');
+            } catch (err) {
+                box.style.display = 'block';
+                box.className = 'scan-result-box scan-result-error';
+                title.textContent = '❌ LỖI CHECK-IN: KHÔNG HỢP LỆ!';
+                details.innerHTML = `<div>${err.message}</div>`;
+                showToast(err.message, 'error');
+            } finally {
+                setTimeout(() => {
+                    isProcessing = false;
+                }, 2000);
+            }
+        }
+
+        function checkInManual() {
+            const token = document.getElementById('manual-token').value.trim();
+            if (!token) {
+                showToast('Vui lòng nhập mã token/vé', 'error');
+                return;
+            }
+            processCheckInToken(token);
+        }
+
+        function startScanner() {
+            html5QrCode = new Html5Qrcode("reader");
+            html5QrCode.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: { width: 250, height: 250 } },
+                (decodedText) => {
+                    processCheckInToken(decodedText);
+                },
+                (errorMessage) => {
+                    // Ignore transient frame errors
+                }
+            ).then(() => {
+                document.getElementById('start-cam-btn').style.display = 'none';
+                document.getElementById('stop-cam-btn').style.display = 'inline-flex';
+            }).catch(err => {
+                showToast('Không thể mở camera: ' + err, 'error');
+            });
+        }
+
+        function stopScanner() {
+            if (html5QrCode) {
+                html5QrCode.stop().then(() => {
+                    document.getElementById('start-cam-btn').style.display = 'inline-flex';
+                    document.getElementById('stop-cam-btn').style.display = 'none';
+                });
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadOrganizerEvents);
+    </script>
+</body>
+
+</html>

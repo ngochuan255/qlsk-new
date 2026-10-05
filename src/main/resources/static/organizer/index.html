@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bảng Điều Khiển - Ban Tổ Chức</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/dashboard.css">
+</head>
+
+<body>
+    <div class="dashboard-layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <span class="brand-badge">BTC</span>
+                Event Manager
+            </div>
+            <ul class="sidebar-menu">
+                <li><a href="/organizer/index.html" class="active">Tổng quan</a></li>
+                <li><a href="/organizer/events.html">Quản lý sự kiện</a></li>
+                <li><a href="/organizer/event-list.html">Danh sách sự kiện</a></li>
+                <li><a href="/organizer/checkin.html">Check-in Mã QR</a></li>
+                <li><a href="/organizer/reports.html">Báo cáo và thống kê</a></li>
+                <li><a href="/organizer/profile.html">Thông tin cá nhân</a></li>
+                <li><a href="/">Xem trang chủ</a></li>
+                <li style="margin-top: 0.5rem;">
+                    <button onclick="logout()" class="btn btn-outline btn-sm"
+                        style="color:white; border-color:#334155; width:100%; padding:0.65rem 1rem;">Đăng xuất</button>
+                </li>
+            </ul>
+        </aside>
+
+        <main class="main-content">
+            <div class="top-bar">
+                <h1 class="page-title">Tổng Quan Hoạt Động Ban Tổ Chức</h1>
+                <div id="user-name-display" style="font-weight:600;"></div>
+            </div>
+
+            <div class="content-body">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <span class="stat-label">Sự Kiện Đang Phụ Trách</span>
+                        <div id="stat-my-events" class="stat-value">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">Tổng Lượt Đăng Ký</span>
+                        <div id="stat-total-regs" class="stat-value" style="color:var(--primary);">-</div>
+                    </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:1.5rem;">
+                    <div class="card" style="text-align:center; padding:2rem;">
+                        <div style="font-size:3rem; margin-bottom:1rem;">📷</div>
+                        <h3 style="font-size:1.2rem; font-weight:700; margin-bottom:0.5rem;">Trạm Quét Mã QR</h3>
+                        <p style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:1.5rem;">
+                            Quét mã QR của người tham dự để xác thực vé và ghi nhận check-in tức thì.
+                        </p>
+                        <a href="/organizer/checkin.html" class="btn btn-primary" style="width:100%;">Mở Trạm
+                            Check-in</a>
+                    </div>
+
+                    <div class="card" style="text-align:center; padding:2rem;">
+                        <div style="font-size:3rem; margin-bottom:1rem;">➕</div>
+                        <h3 style="font-size:1.2rem; font-weight:700; margin-bottom:0.5rem;">Tổ Chức Sự Kiện Mới</h3>
+                        <p style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:1.5rem;">
+                            Thiết lập thông tin, danh mục, thời gian và sinh sơ đồ ghế ngồi tự động.
+                        </p>
+                        <a href="/organizer/events.html" class="btn btn-primary" style="width:100%;">Tạo Sự Kiện
+                            Mới</a>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js"></script>
+    <script>
+        requireAuth(['ROLE_ORGANIZER']);
+
+        async function loadSummary() {
+            const user = getUser();
+            document.getElementById('user-name-display').textContent = `Xin chào, ${user.fullName}`;
+            try {
+                const events = await apiCall('/organizer/events/my');
+                document.getElementById('stat-my-events').textContent = events.length;
+                const totalRegs = events.reduce((sum, e) => sum + e.registeredAttendees, 0);
+                document.getElementById('stat-total-regs').textContent = totalRegs;
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadSummary);
+    </script>
+</body>
+
+</html>

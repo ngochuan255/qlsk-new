@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Danh Sách Sự Kiện - Ban Tổ Chức</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <style>
+        .table-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        #event-list-table {
+            width: 100%;
+            min-width: unset;
+            table-layout: auto;
+        }
+
+        #event-list-table th,
+        #event-list-table td {
+            padding: 0.85rem 0.65rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.65rem 0.9rem;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            background-color: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            outline: none;
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary) !important;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12) !important;
+        }
+
+        /* MODAL STYLES */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-box {
+            background: #ffffff;
+            border-radius: var(--radius-lg);
+            width: 100%;
+            max-width: 520px;
+            box-shadow: var(--shadow-xl);
+            overflow: hidden;
+            animation: modalFadeIn 0.2s ease-out;
+        }
+
+        .modal-box-lg {
+            max-width: 980px;
+            width: 95%;
+            max-height: 88vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-body-scrollable {
+            overflow-y: auto;
+            padding: 1.5rem;
+            flex: 1;
+        }
+
+        .modal-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            font-size: 1.15rem;
+            font-weight: 700;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-muted);
+        }
+
+        .modal-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            background: #f8fafc;
+        }
+
+        @keyframes modalFadeIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-layout">
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <span class="brand-badge">BTC</span>
+                Event Manager
+            </div>
+            <ul class="sidebar-menu">
+                <li><a href="/organizer/index.html">Tổng quan</a></li>
+                <li><a href="/organizer/events.html">Quản lý sự kiện</a></li>
+                <li><a href="/organizer/event-list.html" class="active">Danh sách sự kiện</a></li>
+                <li><a href="/organizer/checkin.html">Check-in Mã QR</a></li>
+                <li><a href="/organizer/reports.html">Báo cáo và thống kê</a></li>
+                <li><a href="/organizer/profile.html">Thông tin cá nhân</a></li>
+                <li><a href="/">Xem trang chủ</a></li>
+                <li style="margin-top: 0.5rem;">
+                    <button onclick="logout()" class="btn btn-outline btn-sm"
+                        style="color:white; border-color:#334155; width:100%; padding:0.65rem 1rem;">Đăng xuất</button>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- MAIN -->
+        <main class="main-content">
+            <div class="top-bar">
+                <h1 class="page-title">Danh Sách Sự Kiện</h1>
+                <div id="user-name-display" style="font-weight:600; color:var(--primary);">Ban Tổ Chức</div>
+            </div>
+
+            <div class="content-body">
+                <div class="card" style="margin-bottom:1.5rem;">
+                    <div
+                        style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; flex-wrap:wrap; gap:1rem;">
+                        <div>
+                            <h2 style="font-size:1.25rem; font-weight:800;">Danh Sách Sự Kiện</h2>
+                            <p style="font-size:0.875rem; color:var(--text-secondary);">Xem chi tiết sự kiện và theo
+                                dõi danh sách người đăng ký, điểm danh check-in.</p>
+                        </div>
+                        <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+                            <input type="text" id="search-event-list" onkeyup="filterEventList()"
+                                class="form-control" placeholder="Tìm theo tên sự kiện, BTC, danh mục..."
+                                style="width:260px; max-width:100%;">
+                            <select id="filter-event-list-status" class="form-control"
+                                style="width:180px; max-width:100%; cursor:pointer;"
+                                onchange="filterEventList()">
+                                <option value="">Tất cả trạng thái</option>
+                                <option value="OPEN_FOR_REGISTRATION">Đang mở đăng ký</option>
+                                <option value="FULL">Đã đủ chỗ</option>
+                                <option value="ONGOING">Đang diễn ra</option>
+                                <option value="COMPLETED">Đã kết thúc</option>
+                                <option value="DRAFT">Chờ duyệt (Nháp)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="table-wrapper" style="overflow-x:auto;">
+                        <table class="data-table" id="event-list-table">
+                            <thead>
+                                <tr>
+                                    <th>Tên Sự Kiện</th>
+                                    <th>Danh Mục</th>
+                                    <th>Ban Tổ Chức</th>
+                                    <th>Thời Gian</th>
+                                    <th style="text-align:center;">Chỗ Ngồi / Đăng Ký</th>
+                                    <th style="text-align:center;">Trạng Thái</th>
+                                    <th style="text-align:center;">Hành Động</th>
+                                </tr>
+                            </thead>
+                            <tbody id="event-list-table-body">
+                                <tr>
+                                    <td colspan="7" style="text-align:center;">Đang tải danh sách sự kiện...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ====================================================================
+         EVENT ATTENDEES & CHECK-IN MODAL (DANH SÁCH ĐĂNG KÝ)
+         ==================================================================== -->
+    <div id="event-attendees-modal" class="modal-overlay">
+        <div class="modal-box modal-box-lg">
+            <div class="modal-header">
+                <div>
+                    <h3 id="attendees-modal-title" style="margin-bottom:0.25rem;">Danh Sách Đăng Ký & Check-in</h3>
+                    <p id="attendees-modal-subtitle" style="font-size:0.85rem; color:var(--text-secondary); margin:0;">
+                        Sự kiện: -</p>
+                </div>
+                <button type="button" class="modal-close" onclick="closeEventAttendeesModal()">&times;</button>
+            </div>
+            <div class="modal-body-scrollable">
+                <!-- Mini summary cards -->
+                <div
+                    style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:0.75rem; margin-bottom:1.25rem;">
+                    <div
+                        style="background:#f8fafc; border:1px solid var(--border-color); border-radius:var(--radius-md); padding:0.75rem 1rem;">
+                        <span
+                            style="font-size:0.75rem; color:var(--text-secondary); font-weight:600; display:block;">Tổng
+                            đăng ký</span>
+                        <span id="att-count-total"
+                            style="font-size:1.35rem; font-weight:800; color:var(--text-primary);">-</span>
+                    </div>
+                    <div
+                        style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:var(--radius-md); padding:0.75rem 1rem;">
+                        <span style="font-size:0.75rem; color:#166534; font-weight:600; display:block;">Đã
+                            check-in</span>
+                        <span id="att-count-checked" style="font-size:1.35rem; font-weight:800; color:#16a34a;">-</span>
+                    </div>
+                    <div
+                        style="background:#fffbeb; border:1px solid #fef3c7; border-radius:var(--radius-md); padding:0.75rem 1rem;">
+                        <span style="font-size:0.75rem; color:#92400e; font-weight:600; display:block;">Chưa
+                            check-in</span>
+                        <span id="att-count-unchecked"
+                            style="font-size:1.35rem; font-weight:800; color:#d97706;">-</span>
+                    </div>
+                    <div
+                        style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:var(--radius-md); padding:0.75rem 1rem;">
+                        <span style="font-size:0.75rem; color:#1e40af; font-weight:600; display:block;">Tỷ lệ tham
+                            dự</span>
+                        <span id="att-count-rate"
+                            style="font-size:1.35rem; font-weight:800; color:var(--primary);">-</span>
+                    </div>
+                </div>
+
+                <!-- Filters & Search Toolbar -->
+                <div
+                    style="display:flex; justify-content:space-between; align-items:center; gap:0.75rem; margin-bottom:1rem; flex-wrap:wrap;">
+                    <div style="display:flex; gap:0.5rem;">
+                        <button type="button" id="att-filter-all" class="btn btn-primary btn-sm"
+                            onclick="setAttendeesFilter('ALL')">Tất cả</button>
+                        <button type="button" id="att-filter-checked" class="btn btn-outline btn-sm"
+                            onclick="setAttendeesFilter('CHECKED')">Đã check-in</button>
+                        <button type="button" id="att-filter-unchecked" class="btn btn-outline btn-sm"
+                            onclick="setAttendeesFilter('UNCHECKED')">Chưa check-in</button>
+                    </div>
+                    <div style="width:260px; max-width:100%;">
+                        <input type="text" id="att-search-input" onkeyup="filterAttendeesList()" class="form-control"
+                            placeholder="Tìm theo tên, email, SĐT, mã vé...">
+                    </div>
+                </div>
+
+                <!-- Attendees Table -->
+                <div class="table-wrapper"
+                    style="border:1px solid var(--border-color); border-radius:var(--radius-md); max-height:360px; overflow-y:auto;">
+                    <table class="data-table" style="font-size:0.875rem;">
+                        <thead style="position:sticky; top:0; background:#f8fafc; z-index:2;">
+                            <tr>
+                                <th style="width:45px;">STT</th>
+                                <th>Mã Vé</th>
+                                <th>Họ Và Tên</th>
+                                <th>Email</th>
+                                <th>Số Điện Thoại</th>
+                                <th>Ghế</th>
+                                <th>Thời Gian Đăng Ký</th>
+                                <th>Trạng Thái Check-in</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendees-table-body">
+                            <tr>
+                                <td colspan="8" style="text-align:center;">Đang tải danh sách...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline btn-sm" onclick="closeEventAttendeesModal()">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js"></script>
+    <script>
+        requireAuth(['ROLE_ORGANIZER', 'ADMIN']);
+
+        let allEventsData = [];
+
+        async function loadEvents() {
+            try {
+                const user = getUser();
+                if (user) {
+                    document.getElementById('user-name-display').textContent = `Ban Tổ Chức: ${user.fullName || user.username}`;
+                }
+
+                allEventsData = await apiCall('/organizer/events/my');
+                renderEventListTable(allEventsData);
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        function renderEventListTable(events) {
+            const tbody = document.getElementById('event-list-table-body');
+            if (!tbody) return;
+
+            if (!events || events.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:2rem;">Không tìm thấy sự kiện nào.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = events.map(e => {
+                const safeTitle = (e.title || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                return `
+                    <tr>
+                        <td><strong>${e.title}</strong></td>
+                        <td>${e.categoryName || '-'}</td>
+                        <td>${e.organizerName || '-'}</td>
+                        <td style="font-size:0.85rem;">${formatDateTime(e.startTime)}</td>
+                        <td style="text-align:center;"><strong>${e.registeredAttendees}</strong> / ${e.maxAttendees}</td>
+                        <td style="text-align:center;"><span class="badge ${getStatusBadge(e.status)}">${e.statusText}</span></td>
+                        <td style="text-align:center;">
+                            <button onclick="openEventAttendeesModal(${e.id}, '${safeTitle}')" class="btn btn-outline btn-sm">Danh sách đăng ký</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function filterEventList() {
+            const q = (document.getElementById('search-event-list')?.value || '').toLowerCase().trim();
+            const status = document.getElementById('filter-event-list-status')?.value || '';
+
+            let filtered = allEventsData || [];
+            if (status) {
+                filtered = filtered.filter(e => e.status === status);
+            }
+            if (q) {
+                filtered = filtered.filter(e =>
+                    (e.title && e.title.toLowerCase().includes(q)) ||
+                    (e.organizerName && e.organizerName.toLowerCase().includes(q)) ||
+                    (e.categoryName && e.categoryName.toLowerCase().includes(q))
+                );
+            }
+            renderEventListTable(filtered);
+        }
+
+        function getStatusBadge(status) {
+            return status === 'OPEN_FOR_REGISTRATION' ? 'badge-open' :
+                status === 'FULL' ? 'badge-full' :
+                    status === 'ONGOING' ? 'badge-ongoing' :
+                        status === 'COMPLETED' ? 'badge-completed' : 'badge-draft';
+        }
+
+        // ====================================================================
+        // XEM DANH SÁCH ĐĂNG KÝ VÀ CHECK-IN THEO SỰ KIỆN
+        // ====================================================================
+        let currentEventAttendees = [];
+        let currentAttendeeFilter = 'ALL';
+
+        async function openEventAttendeesModal(eventId, eventTitle) {
+            document.getElementById('attendees-modal-title').textContent = 'Danh Sách Đăng Ký & Check-in';
+            document.getElementById('attendees-modal-subtitle').textContent = `Sự kiện: ${eventTitle}`;
+            document.getElementById('att-search-input').value = '';
+            currentAttendeeFilter = 'ALL';
+            updateAttendeeFilterButtons();
+
+            const tbody = document.getElementById('attendees-table-body');
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Đang tải danh sách...</td></tr>';
+            document.getElementById('att-count-total').textContent = '-';
+            document.getElementById('att-count-checked').textContent = '-';
+            document.getElementById('att-count-unchecked').textContent = '-';
+            document.getElementById('att-count-rate').textContent = '-';
+
+            document.getElementById('event-attendees-modal').style.display = 'flex';
+
+            try {
+                currentEventAttendees = await apiCall(`/organizer/events/${eventId}/registrations`);
+                updateAttendeesSummaryStats();
+                renderAttendeesTable();
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--danger);">Lỗi khi tải danh sách: ${err.message}</td></tr>`;
+            }
+        }
+
+        function closeEventAttendeesModal() {
+            document.getElementById('event-attendees-modal').style.display = 'none';
+            currentEventAttendees = [];
+        }
+
+        function setAttendeesFilter(filterType) {
+            currentAttendeeFilter = filterType;
+            updateAttendeeFilterButtons();
+            renderAttendeesTable();
+        }
+
+        function updateAttendeeFilterButtons() {
+            const btnAll = document.getElementById('att-filter-all');
+            const btnChecked = document.getElementById('att-filter-checked');
+            const btnUnchecked = document.getElementById('att-filter-unchecked');
+
+            btnAll.className = currentAttendeeFilter === 'ALL' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm';
+            btnChecked.className = currentAttendeeFilter === 'CHECKED' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm';
+            btnUnchecked.className = currentAttendeeFilter === 'UNCHECKED' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm';
+        }
+
+        function updateAttendeesSummaryStats() {
+            const total = currentEventAttendees.length;
+            const checked = currentEventAttendees.filter(a => a.isCheckedIn).length;
+            const unchecked = total - checked;
+            const rate = total > 0 ? Math.round((checked / total) * 100) : 0;
+
+            document.getElementById('att-count-total').textContent = total;
+            document.getElementById('att-count-checked').textContent = checked;
+            document.getElementById('att-count-unchecked').textContent = unchecked;
+            document.getElementById('att-count-rate').textContent = `${rate}%`;
+        }
+
+        function filterAttendeesList() {
+            renderAttendeesTable();
+        }
+
+        function renderAttendeesTable() {
+            const keyword = (document.getElementById('att-search-input').value || '').trim().toLowerCase();
+            const tbody = document.getElementById('attendees-table-body');
+
+            let filtered = currentEventAttendees.filter(a => {
+                if (currentAttendeeFilter === 'CHECKED' && !a.isCheckedIn) return false;
+                if (currentAttendeeFilter === 'UNCHECKED' && a.isCheckedIn) return false;
+
+                if (keyword) {
+                    const matchName = (a.userName || '').toLowerCase().includes(keyword);
+                    const matchEmail = (a.userEmail || '').toLowerCase().includes(keyword);
+                    const matchPhone = (a.userPhone || '').toLowerCase().includes(keyword);
+                    const matchCode = (a.registrationCode || '').toLowerCase().includes(keyword);
+                    const matchSeat = (a.seatCode || '').toLowerCase().includes(keyword);
+                    return matchName || matchEmail || matchPhone || matchCode || matchSeat;
+                }
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--text-muted); padding:2rem;">Không tìm thấy người tham gia phù hợp.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = filtered.map((item, index) => {
+                const checkInBadge = item.isCheckedIn
+                    ? `<span class="badge badge-open" style="background:#dcfce7; color:#15803d; border:1px solid #86efac;">Đã check-in</span><div style="font-size:0.75rem; color:var(--text-secondary); margin-top:2px;">${formatDateTime(item.checkInTime)}</div>`
+                    : `<span class="badge badge-full" style="background:#fef3c7; color:#b45309; border:1px solid #fde68a;">Chưa check-in</span>`;
+
+                return `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td><code>${item.registrationCode || '-'}</code></td>
+                        <td><strong>${item.userName || '-'}</strong></td>
+                        <td>${item.userEmail || '-'}</td>
+                        <td>${item.userPhone || '-'}</td>
+                        <td>${item.seatCode ? `<span class="badge" style="background:#e0e7ff; color:#3730a3; font-weight:700;">${item.seatCode}</span>` : '-'}</td>
+                        <td style="font-size:0.8rem;">${formatDateTime(item.registeredAt)}</td>
+                        <td>${checkInBadge}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadEvents();
+        });
+    </script>
+</body>
+
+</html>

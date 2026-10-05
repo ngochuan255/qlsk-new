@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sự Kiện Đã Đăng Ký - QLSK EventHub</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .page-header {
+            margin-bottom: 2rem;
+        }
+
+        .page-title {
+            font-size: 1.85rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin: 0 0 0.5rem 0;
+            letter-spacing: -0.5px;
+        }
+
+        .page-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin: 0;
+            margin-bottom: 1.5rem;
+        }
+
+        /* FILTER BAR */
+        .filter-bar {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1rem 1.25rem;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-inputs {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex: 1;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            position: relative;
+            flex: 1;
+            min-width: 240px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.65rem 0.9rem;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            background-color: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            outline: none;
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary) !important;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12) !important;
+        }
+
+        /* TABLE WRAPPER */
+        .table-card {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+            margin-bottom: 3rem;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+
+        .data-table th {
+            background-color: #f8fafc;
+            color: var(--text-secondary);
+            font-weight: 700;
+            padding: 0.85rem 0.85rem;
+            border-bottom: 1px solid var(--border-color);
+            white-space: nowrap;
+            text-transform: uppercase;
+            font-size: 0.775rem;
+            letter-spacing: 0.5px;
+        }
+
+        .data-table td {
+            padding: 0.85rem 0.85rem;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-primary);
+            vertical-align: middle;
+        }
+
+        .data-table tbody tr:hover {
+            background-color: #f8fafc;
+        }
+
+        .event-cell-title {
+            font-weight: 700;
+            color: var(--text-primary);
+            text-decoration: none;
+            display: block;
+            margin-bottom: 0.25rem;
+            transition: color 0.2s;
+        }
+
+        .event-cell-title:hover {
+            color: var(--primary);
+        }
+
+        .badge-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.25rem 0.65rem;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        .badge-confirmed {
+            background: #e0e7ff;
+            color: #3730a3;
+        }
+
+        .badge-checkedin {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .badge-cancelled {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        /* MODAL */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.65);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            backdrop-filter: blur(4px);
+            padding: 1rem;
+        }
+
+        .modal-content {
+            background: #ffffff;
+            border-radius: var(--radius-lg);
+            width: 100%;
+            max-width: 480px;
+            box-shadow: var(--shadow-xl);
+            overflow: hidden;
+            animation: modalFadeIn 0.25s ease-out;
+            border: 1px solid var(--border-color);
+        }
+
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.96) translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .modal-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: var(--text-primary);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.4rem;
+            cursor: pointer;
+            color: var(--text-muted);
+            line-height: 1;
+            padding: 0;
+        }
+
+        /* TICKET CARD MODAL STYLES (MATCHING MY-TICKETS) */
+        .ticket-card {
+            background: #ffffff;
+            border-radius: var(--radius-lg);
+            border: 2px dashed var(--border-color);
+            padding: 1.75rem;
+            position: relative;
+            box-shadow: var(--shadow-xl);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .ticket-qr {
+            width: 200px;
+            height: 200px;
+            margin: 1rem auto 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 8px;
+            background: #ffffff;
+            box-sizing: border-box;
+            display: block;
+        }
+
+        .ticket-meta {
+            width: 100%;
+            text-align: left;
+            margin-top: 1.25rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .ticket-meta-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .ticket-meta-row span {
+            color: var(--text-secondary);
+        }
+
+        .ticket-meta-row strong {
+            color: var(--text-primary);
+            text-align: right;
+            font-weight: 700;
+        }
+
+        /* TOAST */
+        #toast {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            z-index: 9999;
+            padding: 0.85rem 1.4rem;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            font-size: 0.95rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            display: none;
+            transition: all 0.3s ease;
+            max-width: 400px;
+        }
+
+        #toast.success {
+            background-color: #10b981;
+            color: #ffffff;
+        }
+
+        #toast.error {
+            background-color: #ef4444;
+            color: #ffffff;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast"></div>
+
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="brand">
+                <span class="brand-badge">QLSK</span>
+                EventHub Pro
+            </a>
+            <div id="nav-auth" class="nav-auth"></div>
+        </div>
+    </nav>
+
+    <!-- MAIN CONTAINER -->
+    <div class="container" style="margin-top:2rem;">
+        <div class="page-header">
+            <h1 class="page-title">Sự Kiện Đã Đăng Ký</h1>
+            <p class="page-subtitle">Theo dõi các sự kiện bạn đã đăng ký tham gia, tình trạng check-in, vị trí ghế ngồi và xem lại mã vé.</p>
+        </div>
+
+        <!-- FILTER & SEARCH BAR -->
+        <div class="filter-bar">
+            <div class="filter-inputs">
+                <div class="search-box">
+                    <input type="text" id="search-input" class="form-control"
+                        placeholder="Tìm theo tên sự kiện, mã đăng ký, địa điểm..."
+                        oninput="filterEvents()">
+                </div>
+                <div style="min-width:180px;">
+                    <select id="status-filter" class="form-control" onchange="filterEvents()">
+                        <option value="ALL">Tất cả trạng thái</option>
+                        <option value="CONFIRMED">Đã xác nhận</option>
+                        <option value="CHECKED_IN">Đã check-in</option>
+                        <option value="CANCELLED">Đã hủy</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- DATA TABLE -->
+        <div class="table-card">
+            <div class="table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="width:45px; text-align:center;">STT</th>
+                            <th style="white-space:nowrap;">Mã Đăng Ký</th>
+                            <th>Tên Sự Kiện</th>
+                            <th style="white-space:nowrap;">Thời Gian</th>
+                            <th>Địa Điểm</th>
+                            <th style="text-align:center; white-space:nowrap;">Chỗ Ngồi</th>
+                            <th style="text-align:center; white-space:nowrap;">Trạng Thái</th>
+                            <th style="text-align:center; white-space:nowrap; min-width:215px;">Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="events-table-body">
+                        <tr>
+                            <td colspan="8" style="text-align:center; padding:3rem; color:var(--text-muted);">
+                                Đang tải danh sách sự kiện đã đăng ký...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- QR CODE DETAIL MODAL -->
+    <div id="qr-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width:440px; background:transparent; border:none; box-shadow:none; padding:0;">
+            <div class="ticket-card" style="position:relative;">
+                <button type="button" class="modal-close" onclick="closeQrModal()"
+                    style="position:absolute; top:14px; right:16px; font-size:1.6rem; color:var(--text-muted); background:none; border:none; cursor:pointer; line-height:1; z-index:10;"
+                    title="Đóng">&times;</button>
+                <div id="modal-ticket-container" style="width:100%;">
+                    <!-- Dynamically rendered -->
+                </div>
+                <div style="margin-top:1.25rem; width:100%; display:flex; justify-content:center;">
+                    <button type="button" class="btn btn-outline btn-sm" onclick="closeQrModal()" style="min-width:110px;">Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer>
+        <p>© 2026 Hệ Thống Quản Lý Tổ Chức Sự Kiện và Kiểm Soát Tham Dự - QLSK System.</p>
+    </footer>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js?v=6"></script>
+    <script>
+        requireAuth();
+
+        let allTickets = [];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadRegisteredEvents();
+        });
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = type;
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3500);
+        }
+
+        async function loadRegisteredEvents() {
+            try {
+                allTickets = await apiCall('/registrations/my-tickets');
+                renderTable(allTickets);
+            } catch (err) {
+                document.getElementById('events-table-body').innerHTML = `
+                    <tr>
+                        <td colspan="8" style="text-align:center; padding:3rem; color:var(--danger);">
+                            Lỗi tải danh sách: ${err.message}
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        function filterEvents() {
+            const keyword = document.getElementById('search-input').value.trim().toLowerCase();
+            const statusFilter = document.getElementById('status-filter').value;
+
+            const filtered = allTickets.filter(t => {
+                const matchKeyword = !keyword ||
+                    (t.eventTitle && t.eventTitle.toLowerCase().includes(keyword)) ||
+                    (t.registrationCode && t.registrationCode.toLowerCase().includes(keyword)) ||
+                    (t.eventLocation && t.eventLocation.toLowerCase().includes(keyword));
+
+                let matchStatus = true;
+                if (statusFilter === 'CONFIRMED') {
+                    matchStatus = t.status === 'CONFIRMED' && !t.isCheckedIn;
+                } else if (statusFilter === 'CHECKED_IN') {
+                    matchStatus = t.isCheckedIn === true;
+                } else if (statusFilter === 'CANCELLED') {
+                    matchStatus = t.status === 'CANCELLED';
+                }
+
+                return matchKeyword && matchStatus;
+            });
+
+            renderTable(filtered);
+        }
+
+        function renderTable(tickets) {
+            const tbody = document.getElementById('events-table-body');
+
+            if (!tickets || tickets.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" style="text-align:center; padding:3rem;">
+                            <p style="font-size:1.05rem; color:var(--text-secondary); margin-bottom:1rem;">
+                                Không tìm thấy sự kiện đã đăng ký nào phù hợp.
+                            </p>
+                            <a href="/" class="btn btn-primary btn-sm">Khám phá sự kiện mới</a>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = tickets.map((t, idx) => {
+                const isCancelled = t.status === 'CANCELLED';
+                const isCheckedIn = t.isCheckedIn;
+
+                let statusBadge = `<span class="badge-pill badge-confirmed">Đã Xác Nhận</span>`;
+                if (isCancelled) {
+                    statusBadge = `<span class="badge-pill badge-cancelled">Đã Hủy</span>`;
+                } else if (isCheckedIn) {
+                    statusBadge = `<span class="badge-pill badge-checkedin">Đã Check-in</span>`;
+                }
+
+                const seatDisplay = t.seatCode ? `<strong style="color:var(--primary); font-size:0.95rem;">${t.seatCode}</strong>` : '<span style="color:var(--text-muted); font-size:0.85rem;">Tự do</span>';
+
+                let actionButtons = `
+                    <div style="display:flex; justify-content:center; align-items:center; gap:0.35rem; flex-wrap:nowrap;">
+                        <button onclick="viewQrModal(${t.id})" class="btn btn-outline btn-sm" 
+                            style="padding:0.32rem 0.55rem; font-size:0.775rem; border-color:var(--primary); color:var(--primary); white-space:nowrap;" 
+                            title="Xem mã QR">
+                            Mã Vé
+                        </button>
+                        <a href="/event-detail.html?id=${t.eventId}" class="btn btn-outline btn-sm" 
+                            style="padding:0.32rem 0.55rem; font-size:0.775rem; white-space:nowrap;" 
+                            title="Chi tiết sự kiện">
+                            Chi Tiết
+                        </a>
+                `;
+
+                if (!isCancelled && !isCheckedIn) {
+                    actionButtons += `
+                        <button onclick="cancelRegistration(${t.id}, '${escapeHtml(t.eventTitle)}')" class="btn btn-outline btn-sm" 
+                            style="padding:0.32rem 0.55rem; font-size:0.775rem; border-color:var(--danger); color:var(--danger); white-space:nowrap;" 
+                            title="Hủy đăng ký vé">
+                            Hủy Vé
+                        </button>
+                    `;
+                }
+
+                actionButtons += `</div>`;
+
+                return `
+                    <tr>
+                        <td style="text-align:center; font-weight:600; color:var(--text-secondary); white-space:nowrap;">${idx + 1}</td>
+                        <td style="white-space:nowrap;">
+                            <strong style="color:var(--primary); font-family:monospace; font-size:0.925rem;">${t.registrationCode}</strong>
+                        </td>
+                        <td>
+                            <a href="/event-detail.html?id=${t.eventId}" class="event-cell-title">${t.eventTitle}</a>
+                            <div style="font-size:0.775rem; color:var(--text-muted);">Đăng ký: ${formatDateTime(t.registeredAt)}</div>
+                        </td>
+                        <td style="white-space:nowrap;">
+                            <div style="font-weight:600; font-size:0.85rem;">${formatDateTime(t.eventStartTime)}</div>
+                            <div style="font-size:0.775rem; color:var(--text-muted);">Đến: ${formatDateTime(t.eventEndTime)}</div>
+                        </td>
+                        <td>
+                            <span style="font-size:0.875rem;">${t.eventLocation || '--'}</span>
+                        </td>
+                        <td style="text-align:center; white-space:nowrap;">
+                            ${seatDisplay}
+                        </td>
+                        <td style="text-align:center; white-space:nowrap;">
+                            ${statusBadge}
+                        </td>
+                        <td style="text-align:center; white-space:nowrap;">
+                            ${actionButtons}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        }
+
+        function viewQrModal(ticketId) {
+            const t = allTickets.find(item => item.id === ticketId);
+            if (!t) return;
+
+            const isCancelled = t.status === 'CANCELLED';
+            const isCheckedIn = t.isCheckedIn;
+
+            let statusBadge = `<span class="badge badge-open">Đã Xác Nhận</span>`;
+            if (isCancelled) statusBadge = `<span class="badge badge-full">Đã Hủy</span>`;
+            else if (isCheckedIn) statusBadge = `<span class="badge badge-completed">Đã Check-in</span>`;
+
+            const qrContent = isCancelled ? `
+                <div style="height:200px; display:flex; align-items:center; justify-content:center; color:var(--danger); font-weight:700;">
+                    Vé Đã Hủy
+                </div>
+            ` : `
+                <img src="${t.qrCodeImageBase64}" class="ticket-qr" alt="Mã QR Check-in">
+                <div style="font-family:monospace; font-size:0.75rem; color:var(--text-muted); margin-bottom:0.25rem; word-break:break-all;">${t.qrCodeToken || ''}</div>
+            `;
+
+            const seatText = t.seatCode ? `<strong style="color:var(--primary); font-size:1.05rem;">${t.seatCode}</strong>` : '<strong style="color:var(--primary);">Tự do</strong>';
+
+            document.getElementById('modal-ticket-container').innerHTML = `
+                <div style="width:100%; display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; padding-right:1.75rem;">
+                    <span style="font-size:0.95rem; font-weight:800; color:var(--primary);">${t.registrationCode || ''}</span>
+                    ${statusBadge}
+                </div>
+                <h3 style="font-size:1.4rem; font-weight:800; margin:0 0 0.35rem 0; color:var(--text-primary); text-align:center;">${t.eventTitle || ''}</h3>
+                <div style="font-size:0.925rem; color:var(--text-secondary); text-align:center; margin-bottom:0.5rem;">Ghế ngồi: ${seatText}</div>
+
+                <div style="display:flex; flex-direction:column; align-items:center; width:100%;">
+                    ${qrContent}
+                </div>
+
+                <div class="ticket-meta">
+                    <div class="ticket-meta-row"><span>Thời gian:</span><strong>${formatDateTime(t.eventStartTime)}</strong></div>
+                    <div class="ticket-meta-row"><span>Địa điểm:</span><strong>${t.eventLocation || '--'}</strong></div>
+                    <div class="ticket-meta-row"><span>Người tham dự:</span><strong>${t.userName || '--'}</strong></div>
+                    <div class="ticket-meta-row"><span>Check-in:</span><strong>${isCheckedIn ? formatDateTime(t.checkInTime) : 'Chưa check-in'}</strong></div>
+                </div>
+            `;
+
+            document.getElementById('qr-modal').style.display = 'flex';
+        }
+
+        function closeQrModal() {
+            document.getElementById('qr-modal').style.display = 'none';
+        }
+
+        // Close modal on click outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('qr-modal');
+            if (event.target === modal) {
+                closeQrModal();
+            }
+        };
+
+        async function cancelRegistration(ticketId, eventTitle) {
+            if (!confirm(`Bạn có chắc chắn muốn hủy đăng ký tham gia sự kiện "${eventTitle}"? Chỗ ngồi của bạn sẽ được giải phóng cho người khác.`)) {
+                return;
+            }
+
+            try {
+                await apiCall(`/registrations/${ticketId}/cancel`, 'POST');
+                showToast('Đã hủy đăng ký thành công!', 'success');
+                loadRegisteredEvents();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+    </script>
+</body>
+
+</html>
