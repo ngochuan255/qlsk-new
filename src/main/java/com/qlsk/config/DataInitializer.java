@@ -38,11 +38,10 @@ public class DataInitializer implements CommandLineRunner {
             Role roleAttendee = roleRepository.findByName("ROLE_ATTENDEE")
                     .orElseGet(() -> roleRepository.save(Role.builder().name("ROLE_ATTENDEE").build()));
 
-            // 2. Admin: Chỉ tạo nếu hệ thống chưa có tài khoản admin nào
-            boolean hasAdmin = userRepository.findAll().stream()
-                    .anyMatch(u -> u.getRole() != null && "ROLE_ADMIN".equals(u.getRole().getName()));
-            if (!hasAdmin) {
-                User admin = User.builder()
+            // 2. Admin: Reset hoặc khởi tạo tài khoản admin
+            User adminUser = userRepository.findByUsername("admin").orElse(null);
+            if (adminUser == null) {
+                adminUser = User.builder()
                         .username("admin")
                         .password(passwordEncoder.encode("123456"))
                         .fullName("Quản Trị Viên Hệ Thống")
@@ -51,8 +50,13 @@ public class DataInitializer implements CommandLineRunner {
                         .role(roleAdmin)
                         .isActive(true)
                         .build();
-                userRepository.save(admin);
+                userRepository.save(adminUser);
                 log.info("-> Đã khởi tạo tài khoản Admin ban đầu: admin / 123456");
+            } else {
+                adminUser.setPassword(passwordEncoder.encode("123456"));
+                adminUser.setIsActive(true);
+                userRepository.save(adminUser);
+                log.info("-> Đã reset lại mật khẩu tài khoản Admin thành 123456");
             }
 
             // 3. Dữ liệu mẫu (chỉ khởi tạo nếu app.init-sample-data=true trong application.properties)
@@ -112,8 +116,8 @@ public class DataInitializer implements CommandLineRunner {
                     log.info("-> Đã tạo tài khoản Người tham gia mẫu: attendee1 / 123456");
                 }
 
-                User admin = userRepository.findByUsername("admin").orElse(null);
-                if (eventRepository.count() == 0 && organizer != null && admin != null && catTech != null) {
+                User adminUser2 = userRepository.findByUsername("admin").orElse(null);
+                if (eventRepository.count() == 0 && organizer != null && adminUser2 != null && catTech != null) {
                     Event sampleEvent = Event.builder()
                             .title("Hội Thảo Trí Tuệ Nhân Tạo & Chuyển Đổi Số 2026")
                             .description("Sự kiện thường niên quy tụ các chuyên gia hàng đầu về AI, Cloud và chuyển đổi số trong giáo dục và doanh nghiệp.")
@@ -128,7 +132,7 @@ public class DataInitializer implements CommandLineRunner {
                             .hasSeatMap(true)
                             .seatRows(5)
                             .seatCols(10)
-                            .approvedBy(admin)
+                            .approvedBy(adminUser2)
                             .approvedAt(LocalDateTime.now())
                             .build();
 
@@ -151,6 +155,42 @@ public class DataInitializer implements CommandLineRunner {
                     log.info("-> Đã khởi tạo sự kiện mẫu và ma trận 50 ghế ngồi.");
                 }
             }
+            
+            // Tự động fix lỗi font chữ do schema.sql bị nạp sai encoding
+            userRepository.findByUsername("admin").ifPresent(u -> {
+                u.setFullName("Quản Trị Viên Hệ Thống");
+                userRepository.save(u);
+            });
+            userRepository.findByUsername("organizer1").ifPresent(u -> {
+                u.setFullName("Ban Tổ Chức CLB Công Nghệ");
+                userRepository.save(u);
+            });
+            userRepository.findByUsername("attendee1").ifPresent(u -> {
+                u.setFullName("Nguyễn Văn Anh");
+                userRepository.save(u);
+            });
+            
+            categoryRepository.findById(1L).ifPresent(c -> {
+                c.setName("Công nghệ & AI");
+                c.setDescription("Các hội thảo, triển lãm và diễn đàn về công nghệ thông tin và trí tuệ nhân tạo");
+                categoryRepository.save(c);
+            });
+            categoryRepository.findById(2L).ifPresent(c -> {
+                c.setName("Giáo dục & Kỹ năng");
+                c.setDescription("Các khóa đào tạo, workshop phát triển kỹ năng mềm và hướng nghiệp");
+                categoryRepository.save(c);
+            });
+            categoryRepository.findById(3L).ifPresent(c -> {
+                c.setName("Văn hóa & Nghệ thuật");
+                c.setDescription("Các chương trình âm nhạc, trình diễn nghệ thuật và giao lưu văn hóa");
+                categoryRepository.save(c);
+            });
+            categoryRepository.findById(4L).ifPresent(c -> {
+                c.setName("Thể thao & Sức khỏe");
+                c.setDescription("Các giải đấu thể thao, ngày hội chạy bộ và sức khỏe cộng đồng");
+                categoryRepository.save(c);
+            });
+            log.info("-> Đã tự động fix lỗi font chữ tiếng Việt (Mojibake) trong Database.");
 
         } catch (Exception e) {
             log.error("Lỗi trong quá trình khởi tạo dữ liệu ban đầu: {}", e.getMessage(), e);
