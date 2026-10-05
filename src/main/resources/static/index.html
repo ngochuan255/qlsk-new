@@ -6,66 +6,246 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hệ Thống Quản Lý Sự Kiện & Kiểm Soát Tham Dự (QLSK)</title>
     <link rel="stylesheet" href="/css/style.css">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        /* Modern Hero with Glassmorphism Search */
         .hero {
+            position: relative;
             background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%);
             color: #ffffff;
-            padding: 4rem 1.5rem;
+            padding: 6rem 1.5rem 8rem;
             text-align: center;
             border-radius: var(--radius-lg);
-            margin-bottom: 2.5rem;
+            margin-bottom: -4rem;
+            /* overlap with search */
             box-shadow: var(--shadow-xl);
+            overflow: hidden;
+            z-index: 1;
         }
 
-        .hero h1 {
-            font-size: 2.75rem;
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 60%);
+            animation: rotateBg 20s linear infinite;
+            z-index: -1;
+        }
+
+        @keyframes rotateBg {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .hero-title {
+            font-size: 3.5rem;
             font-weight: 800;
-            margin-bottom: 1rem;
-            letter-spacing: -0.5px;
+            margin-bottom: 1.5rem;
+            letter-spacing: -1px;
+            background: linear-gradient(to right, #fff, #c7d2fe);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            opacity: 0;
+            /* for GSAP */
+            transform: translateY(30px);
         }
 
-        .hero p {
-            font-size: 1.15rem;
-            color: #c7d2fe;
-            max-width: 680px;
-            margin: 0 auto 2rem;
+        .hero-desc {
+            font-size: 1.25rem;
+            color: #e0e7ff;
+            max-width: 700px;
+            margin: 0 auto 3rem;
+            line-height: 1.6;
+            opacity: 0;
+            transform: translateY(30px);
         }
 
         .search-box {
-            background: #ffffff;
-            padding: 1rem;
-            border-radius: var(--radius-md);
-            box-shadow: var(--shadow-xl);
+            position: relative;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem;
+            border-radius: var(--radius-lg);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
             display: flex;
             flex-wrap: wrap;
-            gap: 0.75rem;
-            max-width: 860px;
+            gap: 1rem;
+            max-width: 900px;
+            margin: 0 auto 4rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        .search-input,
+        .search-select {
+            flex: 1;
+            min-width: 200px;
+            padding: 1rem 1.25rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus,
+        .search-select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-light);
+        }
+
+        .search-btn {
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            border-radius: var(--radius-md);
+        }
+
+        /* About Section */
+        .about-section {
+            padding: 5rem 1.5rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+            max-width: 1200px;
             margin: 0 auto;
         }
 
-        .search-input {
-            flex: 2;
-            min-width: 200px;
-            padding: 0.75rem 1rem;
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-sm);
-            font-size: 0.95rem;
+        .about-content h2 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 1.5rem;
+            line-height: 1.2;
         }
 
-        .search-select {
-            flex: 1;
-            min-width: 150px;
-            padding: 0.75rem;
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-sm);
+        .about-content p {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            line-height: 1.7;
+        }
+
+        .feature-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .feature-icon {
+            background: var(--primary-light);
+            color: var(--primary);
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .feature-text h4 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+            color: var(--text-primary);
+        }
+
+        .feature-text p {
             font-size: 0.95rem;
-            background: #ffffff;
+            color: var(--text-secondary);
+            margin-bottom: 0;
+        }
+
+        .about-visual {
+            position: relative;
+        }
+
+        .about-visual .glass-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            border-radius: var(--radius-lg);
+            padding: 1rem;
+            box-shadow: var(--shadow-xl);
+            border: 1px solid var(--border-color);
+            position: relative;
+            z-index: 2;
+        }
+
+        .about-visual .floating-badge {
+            position: absolute;
+            background: white;
+            padding: 1rem;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-weight: 600;
+            z-index: 3;
+        }
+
+        .badge-1 {
+            top: -20px;
+            right: -20px;
+        }
+
+        .badge-2 {
+            bottom: -20px;
+            left: -20px;
+        }
+
+        .blob {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            background: var(--primary);
+            filter: blur(80px);
+            opacity: 0.15;
+            border-radius: 50%;
+            z-index: 1;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        /* Events Section Enhancements */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 2.5rem;
+            padding-top: 3rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .section-title {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--text-primary);
         }
 
         .events-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 1.75rem;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 2rem;
         }
 
         .event-card {
@@ -73,66 +253,95 @@
             border-radius: var(--radius-lg);
             border: 1px solid var(--border-color);
             overflow: hidden;
-            box-shadow: var(--shadow-sm);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
             display: flex;
             flex-direction: column;
-            transition: all 0.25s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .event-card:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--shadow-xl);
+            transform: translateY(-8px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border-color: var(--primary-light);
         }
 
         .event-banner {
-            height: 180px;
+            height: 200px;
             background: linear-gradient(135deg, #4f46e5, #06b6d4);
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            font-size: 3rem;
+            font-size: 3.5rem;
             position: relative;
             overflow: hidden;
         }
 
+        .event-banner img {
+            transition: transform 0.5s ease;
+        }
+
+        .event-card:hover .event-banner img {
+            transform: scale(1.05);
+        }
+
         .event-badge-status {
             position: absolute;
-            top: 12px;
-            right: 12px;
+            top: 16px;
+            right: 16px;
             z-index: 2;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .event-content {
-            padding: 1.25rem;
+            padding: 1.5rem;
             display: flex;
             flex-direction: column;
             flex: 1;
-            gap: 0.75rem;
+            gap: 1rem;
         }
 
         .event-title {
-            font-size: 1.15rem;
+            font-size: 1.25rem;
             font-weight: 700;
             color: var(--text-primary);
             line-height: 1.4;
         }
 
         .event-meta {
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             color: var(--text-secondary);
             display: flex;
             flex-direction: column;
-            gap: 0.35rem;
+            gap: 0.6rem;
+        }
+
+        .event-meta i {
+            width: 20px;
+            color: var(--primary);
+            text-align: center;
+            margin-right: 4px;
         }
 
         .event-footer {
             margin-top: auto;
-            padding-top: 1rem;
+            padding-top: 1.25rem;
             border-top: 1px solid var(--border-color);
             display: flex;
             justify-content: space-between;
             align-items: center;
+        }
+
+        @media (max-width: 900px) {
+            .about-section {
+                grid-template-columns: 1fr;
+                gap: 3rem;
+            }
+
+            .hero-title {
+                font-size: 2.5rem;
+            }
         }
     </style>
 </head>
@@ -143,7 +352,7 @@
     <nav class="navbar">
         <div class="nav-container">
             <a href="/" class="brand">
-                <span class="brand-badge">QLSK</span>
+                <span class="brand-badge"><i class="fa-solid fa-ticket"></i> QLSK</span>
                 EventHub Pro
             </a>
             <div id="nav-auth" class="nav-auth"></div>
@@ -151,50 +360,155 @@
     </nav>
 
     <!-- MAIN CONTAINER -->
-    <div class="container">
+    <div class="container" style="padding-top: 0;">
         <!-- HERO SECTION -->
         <section class="hero">
-            <h1>Khám Phá & Đăng Ký Sự Kiện</h1>
-            <p>Hệ thống tổ chức sự kiện chuyên nghiệp, quản lý sơ đồ chỗ ngồi thông minh và kiểm soát vé vào cửa bằng mã
-                QR hiện đại.</p>
+            <h1 class="hero-title">Khám Phá & Trải Nghiệm Sự Kiện Đỉnh Cao</h1>
+            <p class="hero-desc">Hệ thống quản lý sự kiện chuyên nghiệp. Dễ dàng đặt vé, chọn chỗ ngồi và check-in nhanh
+                chóng với công nghệ mã QR hiện đại.</p>
+        </section>
 
-            <!-- SEARCH / FILTER BAR -->
-            <form id="search-form" class="search-box">
-                <input type="text" id="keyword" class="search-input" placeholder="Tìm theo tên sự kiện, địa điểm...">
-                <select id="category-select" class="search-select">
-                    <option value="">Tất cả danh mục</option>
-                </select>
-                <select id="status-select" class="search-select">
-                    <option value="">Tất cả trạng thái</option>
-                    <option value="OPEN_FOR_REGISTRATION">Đang mở đăng ký</option>
-                    <option value="FULL">Đã đủ chỗ</option>
-                    <option value="ONGOING">Đang diễn ra</option>
-                    <option value="COMPLETED">Đã kết thúc</option>
-                </select>
-                <button type="submit" class="btn btn-primary">Tìm kiếm</button>
-            </form>
+        <!-- SEARCH / FILTER BAR -->
+        <form id="search-form" class="search-box">
+            <input type="text" id="keyword" class="search-input" placeholder="Tìm kiếm theo tên sự kiện, địa điểm...">
+            <select id="category-select" class="search-select">
+                <option value="">Tất cả danh mục</option>
+            </select>
+            <select id="status-select" class="search-select">
+                <option value="">Tất cả trạng thái</option>
+                <option value="OPEN_FOR_REGISTRATION">Đang mở đăng ký</option>
+                <option value="FULL">Đã đủ chỗ</option>
+                <option value="ONGOING">Đang diễn ra</option>
+                <option value="COMPLETED">Đã kết thúc</option>
+            </select>
+            <button type="submit" class="btn btn-primary search-btn"><i class="fa-solid fa-search"></i> Tìm
+                kiếm</button>
+        </form>
+
+        <!-- ABOUT SECTION -->
+        <section class="about-section">
+            <div class="about-content gs-reveal-left">
+                <h2>Giải Pháp Toàn Diện Cho Mọi Sự Kiện</h2>
+                <p>Nền tảng của chúng tôi mang lại trải nghiệm mượt mà từ khâu tạo sự kiện đến khi sự kiện kết thúc.
+                    Thiết kế tối ưu cho cả nhà tổ chức và người tham gia.</p>
+
+                <div class="feature-list">
+                    <div class="feature-item">
+                        <div class="feature-icon"><i class="fa-solid fa-qrcode"></i></div>
+                        <div class="feature-text">
+                            <h4>Check-in Siêu Tốc Bằng Mã QR</h4>
+                            <p>Không cần vé giấy, chỉ cần quét mã QR trên điện thoại để vào cổng trong 2 giây.</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon"><i class="fa-solid fa-chair"></i></div>
+                        <div class="feature-text">
+                            <h4>Sơ Đồ Chỗ Ngồi Trực Quan</h4>
+                            <p>Chọn chính xác vị trí bạn muốn ngồi thông qua sơ đồ tương tác 2D thông minh.</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon"><i class="fa-solid fa-chart-line"></i></div>
+                        <div class="feature-text">
+                            <h4>Quản Lý Thông Minh Cho Ban Tổ Chức</h4>
+                            <p>Theo dõi doanh thu, số lượng check-in và đánh giá theo thời gian thực.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="about-visual gs-reveal-right">
+                <div class="blob"></div>
+                <div class="glass-card">
+                    <img src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+                        alt="Event Management" style="width:100%; border-radius:8px; object-fit:cover; height: 350px;">
+                </div>
+                <div class="floating-badge badge-1">
+                    <i class="fa-solid fa-check-circle" style="color:var(--success); font-size:1.5rem;"></i>
+                    <div>
+                        <div style="font-size:0.8rem; color:var(--text-secondary)">Check-in</div>
+                        <div style="font-size:1.1rem; font-weight:800; color:var(--text-primary)">100% Online</div>
+                    </div>
+                </div>
+                <div class="floating-badge badge-2">
+                    <i class="fa-solid fa-star" style="color:var(--warning); font-size:1.5rem;"></i>
+                    <div>
+                        <div style="font-size:0.8rem; color:var(--text-secondary)">Đánh giá</div>
+                        <div style="font-size:1.1rem; font-weight:800; color:var(--text-primary)">4.9/5.0</div>
+                    </div>
+                </div>
+            </div>
         </section>
 
         <!-- EVENT LIST SECTION -->
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
-            <h2 style="font-size:1.5rem; font-weight:800;">Sự Kiện Nổi Bật</h2>
-            <span id="events-count" style="font-size:0.9rem; color:var(--text-secondary);"></span>
+        <div class="section-header gs-reveal-up">
+            <h2 class="section-title">Sự Kiện Nổi Bật</h2>
+            <span id="events-count"
+                style="font-size:1rem; font-weight:600; color:var(--primary); background:var(--primary-light); padding:0.4rem 1rem; border-radius:20px;"></span>
         </div>
 
         <div id="events-grid" class="events-grid">
-            <p style="text-align:center; grid-column:1/-1; color:var(--text-muted); padding:3rem;">Đang tải danh sách sự
-                kiện...</p>
+            <p style="text-align:center; grid-column:1/-1; color:var(--text-muted); padding:4rem; font-size:1.2rem;">
+                <i class="fa-solid fa-spinner fa-spin" style="margin-right:10px;"></i> Đang tải danh sách sự kiện...
+            </p>
         </div>
     </div>
 
     <!-- FOOTER -->
     <footer>
-        <p>© 2026 Hệ Thống Quản Lý Tổ Chức Sự Kiện và Kiểm Soát Tham Dự - QLSK System.</p>
+        <p>© 2026 Hệ Thống Quản Lý Tổ Chức Sự Kiện và Kiểm Soát Tham Dự - EventHub Pro.</p>
     </footer>
 
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
     <script src="/js/api.js"></script>
     <script src="/js/auth.js?v=6"></script>
+
     <script>
+        // Init GSAP
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Hero Animations
+        const heroTl = gsap.timeline();
+        heroTl.to(".hero-title", { y: 0, opacity: 1, duration: 0.8, ease: "power3.out", delay: 0.1 })
+            .to(".hero-desc", { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" }, "-=0.6")
+            .to(".search-box", { y: 0, opacity: 1, duration: 0.8, ease: "back.out(1.5)" }, "-=0.4");
+
+        // About Section Scroll Animations
+        gsap.from(".gs-reveal-left", {
+            scrollTrigger: {
+                trigger: ".about-section",
+                start: "top 80%",
+            },
+            x: -50, opacity: 0, duration: 1, ease: "power3.out"
+        });
+
+        gsap.from(".gs-reveal-right", {
+            scrollTrigger: {
+                trigger: ".about-section",
+                start: "top 80%",
+            },
+            x: 50, opacity: 0, duration: 1, ease: "power3.out"
+        });
+
+        gsap.from(".floating-badge", {
+            scrollTrigger: {
+                trigger: ".about-visual",
+                start: "top 60%",
+            },
+            y: 30, opacity: 0, duration: 0.8, stagger: 0.2, ease: "back.out(1.5)", delay: 0.4
+        });
+
+        gsap.from(".section-header", {
+            scrollTrigger: {
+                trigger: ".section-header",
+                start: "top 85%",
+            },
+            y: 20, opacity: 0, duration: 0.8, ease: "power2.out"
+        });
+
+        // Application Logic
         async function loadCategories() {
             try {
                 const cats = await apiCall('/categories');
@@ -223,10 +537,10 @@
             const grid = document.getElementById('events-grid');
             try {
                 const events = await apiCall(query);
-                document.getElementById('events-count').textContent = `Hiển thị ${events.length} sự kiện`;
+                document.getElementById('events-count').innerHTML = `<i class="fa-solid fa-list-ul"></i> ${events.length} sự kiện`;
 
                 if (events.length === 0) {
-                    grid.innerHTML = '<p style="text-align:center; grid-column:1/-1; color:var(--text-muted); padding:3rem;">Không tìm thấy sự kiện phù hợp.</p>';
+                    grid.innerHTML = '<p style="text-align:center; grid-column:1/-1; color:var(--text-muted); padding:4rem; font-size:1.1rem;"><i class="fa-solid fa-box-open" style="font-size:2rem; display:block; margin-bottom:1rem; color:#cbd5e1;"></i> Không tìm thấy sự kiện phù hợp.</p>';
                     return;
                 }
 
@@ -236,36 +550,45 @@
                             evt.status === 'ONGOING' ? 'badge-ongoing' : 'badge-completed';
 
                     const bannerContent = evt.bannerUrl
-                        ? `<img src="${evt.bannerUrl}" alt="" style="width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0;">`
-                        : '🎟️';
+                        ? `<img src="${evt.bannerUrl}" alt="${evt.title}" style="width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0;">`
+                        : '<i class="fa-solid fa-image" style="opacity:0.5;"></i>';
 
                     return `
-                        <div class="event-card">
+                        <div class="event-card opacity-0">
                             <div class="event-banner">
                                 ${bannerContent}
                                 <span class="badge ${badgeClass} event-badge-status">${evt.statusText}</span>
                             </div>
                             <div class="event-content">
-                                <span style="font-size:0.8rem; font-weight:700; color:var(--primary); text-transform:uppercase;">
+                                <span style="font-size:0.75rem; font-weight:800; color:var(--primary); text-transform:uppercase; letter-spacing:1px;">
                                     ${evt.categoryName}
                                 </span>
                                 <h3 class="event-title">${evt.title}</h3>
                                 <div class="event-meta">
-                                    <div>📍 ${evt.location}</div>
-                                    <div>⏰ ${formatDateTime(evt.startTime)}</div>
-                                    <div>👥 Còn ${evt.remainingSeats} / ${evt.maxAttendees} chỗ</div>
-                                    <div>⭐ ${evt.averageRating > 0 ? evt.averageRating + ' / 5 (' + evt.feedbackCount + ' đánh giá)' : 'Chưa có đánh giá'}</div>
+                                    <div><i class="fa-solid fa-location-dot"></i> ${evt.location}</div>
+                                    <div><i class="fa-regular fa-clock"></i> ${formatDateTime(evt.startTime)}</div>
+                                    <div><i class="fa-solid fa-user-group"></i> Còn ${evt.remainingSeats} / ${evt.maxAttendees} chỗ</div>
+                                    <div><i class="fa-solid fa-star" style="color:var(--warning)"></i> ${evt.averageRating > 0 ? evt.averageRating + ' / 5 (' + evt.feedbackCount + ' đánh giá)' : 'Chưa có đánh giá'}</div>
                                 </div>
                                 <div class="event-footer">
-                                    <span style="font-size:0.85rem; color:var(--text-secondary);">BTC: ${evt.organizerName}</span>
-                                    <a href="/event-detail.html?id=${evt.id}" class="btn btn-primary btn-sm">Xem chi tiết</a>
+                                    <span style="font-size:0.85rem; color:var(--text-secondary); font-weight:500;">
+                                        <i class="fa-solid fa-building"></i> ${evt.organizerName}
+                                    </span>
+                                    <a href="/event-detail.html?id=${evt.id}" class="btn btn-primary btn-sm">Xem chi tiết <i class="fa-solid fa-arrow-right"></i></a>
                                 </div>
                             </div>
                         </div>
                     `;
                 }).join('');
+
+                // GSAP Animation for Cards
+                gsap.fromTo(".event-card",
+                    { y: 50, opacity: 0 },
+                    { y: 0, opacity: 1, duration: 0.6, stagger: 0.1, ease: "power2.out", clearProps: "all" }
+                );
+
             } catch (err) {
-                grid.innerHTML = `<p style="text-align:center; grid-column:1/-1; color:var(--danger); padding:3rem;">Lỗi tải dữ liệu: ${err.message}</p>`;
+                grid.innerHTML = `<p style="text-align:center; grid-column:1/-1; color:var(--danger); padding:4rem; background:#fef2f2; border-radius:12px; border:1px solid #fecaca;"><i class="fa-solid fa-triangle-exclamation"></i> Lỗi tải dữ liệu: ${err.message}</p>`;
             }
         }
 

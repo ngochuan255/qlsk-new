@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="vi">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Thông Tin Cá Nhân - QLSK EventHub</title>
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         .profile-container {
             max-width: 900px;
@@ -19,70 +19,83 @@
             background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%);
             color: #ffffff;
             border-radius: var(--radius-lg);
-            padding: 2rem;
+            padding: 2.5rem;
             display: flex;
             align-items: center;
-            gap: 1.5rem;
+            gap: 2rem;
             box-shadow: 0 10px 25px -5px rgba(67, 56, 202, 0.25);
             flex-wrap: wrap;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .profile-header-card::before {
+            content: '';
+            position: absolute;
+            top: -50%; left: 0; width: 100%; height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%);
+            pointer-events: none;
         }
 
         .profile-avatar {
-            width: 80px;
-            height: 80px;
+            width: 90px;
+            height: 90px;
             border-radius: 50%;
             background: rgba(255, 255, 255, 0.18);
             border: 3px solid rgba(255, 255, 255, 0.4);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2.2rem;
+            font-size: 2.5rem;
             font-weight: 800;
             color: #ffffff;
             flex-shrink: 0;
             backdrop-filter: blur(8px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
 
         .profile-header-info {
             flex: 1;
             min-width: 240px;
+            z-index: 1;
         }
 
         .profile-header-name {
-            font-size: 1.5rem;
+            font-size: 1.75rem;
             font-weight: 800;
-            margin-bottom: 0.35rem;
+            margin-bottom: 0.5rem;
             display: flex;
             align-items: center;
-            gap: 0.75rem;
+            gap: 1rem;
             flex-wrap: wrap;
         }
 
         .profile-header-meta {
             display: flex;
-            gap: 1.25rem;
-            font-size: 0.9rem;
-            opacity: 0.9;
+            gap: 1.5rem;
+            font-size: 0.95rem;
+            color: #c7d2fe;
             flex-wrap: wrap;
         }
 
         .badge-role {
             background: rgba(255, 255, 255, 0.2);
-            padding: 0.25rem 0.75rem;
+            padding: 0.35rem 0.85rem;
             border-radius: 9999px;
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             font-weight: 700;
             letter-spacing: 0.03em;
             border: 1px solid rgba(255, 255, 255, 0.3);
             color: #ffffff;
+            backdrop-filter: blur(4px);
         }
 
         .badge-status {
             background: #dcfce7;
             color: #15803d;
-            padding: 0.25rem 0.65rem;
+            padding: 0.35rem 0.85rem;
             border-radius: 9999px;
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             font-weight: 700;
         }
 
@@ -96,65 +109,49 @@
         .form-group {
             display: flex;
             flex-direction: column;
-            gap: 0.4rem;
+            gap: 0.5rem;
             margin-bottom: 1.25rem;
         }
 
         .form-group label {
-            font-size: 0.9rem;
-            font-weight: 600;
+            font-size: 0.95rem;
+            font-weight: 700;
             color: var(--text-primary);
         }
 
         .form-control {
-            padding: 0.75rem 1rem;
+            padding: 0.85rem 1rem;
             border: 1px solid var(--border-color);
-            border-radius: var(--radius-sm);
-            font-size: 0.95rem;
+            border-radius: var(--radius-md);
+            font-size: 1rem;
             outline: none;
             width: 100%;
-            background-color: #ffffff;
+            background-color: #f8fafc;
             box-sizing: border-box;
             transition: all 0.2s ease;
         }
 
         .form-control:focus {
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+            background-color: #ffffff;
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.12);
         }
 
         .form-control:disabled,
         .form-control[readonly] {
-            background-color: #f8fafc;
+            background-color: #f1f5f9;
             color: #64748b;
             cursor: not-allowed;
             border-color: #e2e8f0;
         }
 
-        /* TOAST */
-        #toast {
-            position: fixed;
-            top: 24px;
-            right: 24px;
-            z-index: 9999;
-            padding: 0.85rem 1.4rem;
-            border-radius: var(--radius-md);
-            font-weight: 600;
-            font-size: 0.95rem;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-            display: none;
-            transition: all 0.3s ease;
-            max-width: 400px;
-        }
-
-        #toast.success {
-            background-color: #10b981;
-            color: #ffffff;
-        }
-
-        #toast.error {
-            background-color: #ef4444;
-            color: #ffffff;
+        .card {
+            background: #ffffff;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+            padding: 2.5rem;
+            margin-bottom: 1.5rem;
         }
 
         @media (max-width: 640px) {
@@ -162,17 +159,11 @@
                 grid-template-columns: 1fr;
                 gap: 1rem;
             }
-
             .profile-header-card {
                 flex-direction: column;
                 text-align: center;
             }
-
-            .profile-header-name {
-                justify-content: center;
-            }
-
-            .profile-header-meta {
+            .profile-header-name, .profile-header-meta {
                 justify-content: center;
             }
         }
@@ -181,13 +172,13 @@
 
 <body>
     <!-- TOAST NOTIFICATION -->
-    <div id="toast"></div>
+    <div id="toast-container"></div>
 
     <!-- NAVBAR -->
     <nav class="navbar">
         <div class="nav-container">
             <a href="/" class="brand">
-                <span class="brand-badge">QLSK</span>
+                <span class="brand-badge"><i class="fa-solid fa-ticket"></i> QLSK</span>
                 EventHub Pro
             </a>
             <div id="nav-auth" class="nav-auth"></div>
@@ -199,26 +190,26 @@
         <div class="profile-container">
 
             <!-- HEADER PROFILE CARD -->
-            <div class="profile-header-card">
+            <div class="profile-header-card gs-reveal-up">
                 <div class="profile-avatar" id="avatar-initials">--</div>
                 <div class="profile-header-info">
                     <div class="profile-header-name">
                         <span id="header-full-name">Người Tham Gia</span>
-                        <span class="badge-role" id="badge-role">Người Tham Gia</span>
-                        <span class="badge-status">Đang hoạt động</span>
+                        <span class="badge-role" id="badge-role"><i class="fa-solid fa-user"></i> Người Tham Gia</span>
+                        <span class="badge-status"><i class="fa-solid fa-circle-check"></i> Đang hoạt động</span>
                     </div>
                     <div class="profile-header-meta">
-                        <span>Tài khoản: <strong id="header-username">--</strong></span>
-                        <span>Email: <strong id="header-email">--</strong></span>
+                        <span><i class="fa-solid fa-id-badge"></i> Tài khoản: <strong id="header-username" style="color:#fff;">--</strong></span>
+                        <span><i class="fa-solid fa-envelope"></i> Email: <strong id="header-email" style="color:#fff;">--</strong></span>
                     </div>
                 </div>
             </div>
 
             <!-- CARD 1: CẬP NHẬT THÔNG TIN -->
-            <div class="card">
-                <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 1.25rem;">
-                    <h2 style="font-size: 1.15rem; font-weight: 700; margin: 0;">Thông Tin Cá Nhân</h2>
-                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.25rem; margin-bottom: 0;">
+            <div class="card gs-reveal-up">
+                <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                    <h2 style="font-size: 1.25rem; font-weight: 800; margin: 0; color:var(--text-primary);"><i class="fa-solid fa-user-pen" style="color:var(--primary); margin-right:8px;"></i> Thông Tin Cá Nhân</h2>
+                    <p style="font-size: 0.95rem; color: var(--text-secondary); margin-top: 0.5rem; margin-bottom: 0;">
                         Cập nhật họ tên hiển thị và số điện thoại liên hệ của bạn.
                     </p>
                 </div>
@@ -248,19 +239,19 @@
                         </div>
                     </div>
 
-                    <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 0.5rem;">
-                        <button type="submit" id="btn-save-profile" class="btn btn-primary">
-                            Lưu Thay Đổi
+                    <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1rem;">
+                        <button type="submit" id="btn-save-profile" class="btn btn-primary" style="padding:0.75rem 1.5rem;">
+                            <i class="fa-solid fa-floppy-disk"></i> Lưu Thay Đổi
                         </button>
                     </div>
                 </form>
             </div>
 
             <!-- CARD 2: ĐỔI MẬT KHẨU -->
-            <div class="card">
-                <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 1.25rem;">
-                    <h2 style="font-size: 1.15rem; font-weight: 700; margin: 0;">Đổi Mật Khẩu Tài Khoản</h2>
-                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.25rem; margin-bottom: 0;">
+            <div class="card gs-reveal-up">
+                <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                    <h2 style="font-size: 1.25rem; font-weight: 800; margin: 0; color:var(--text-primary);"><i class="fa-solid fa-shield-halved" style="color:var(--primary); margin-right:8px;"></i> Đổi Mật Khẩu Tài Khoản</h2>
+                    <p style="font-size: 0.95rem; color: var(--text-secondary); margin-top: 0.5rem; margin-bottom: 0;">
                         Để bảo mật tài khoản, vui lòng sử dụng mật khẩu mạnh có ít nhất 6 ký tự.
                     </p>
                 </div>
@@ -285,9 +276,9 @@
                         </div>
                     </div>
 
-                    <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 0.5rem;">
-                        <button type="submit" id="btn-change-password" class="btn btn-primary">
-                            Đổi Mật Khẩu
+                    <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1rem;">
+                        <button type="submit" id="btn-change-password" class="btn btn-primary" style="padding:0.75rem 1.5rem;">
+                            <i class="fa-solid fa-key"></i> Đổi Mật Khẩu
                         </button>
                     </div>
                 </form>
@@ -298,9 +289,10 @@
 
     <!-- FOOTER -->
     <footer>
-        <p>© 2026 Hệ Thống Quản Lý Tổ Chức Sự Kiện và Kiểm Soát Tham Dự - QLSK System.</p>
+        <p>© 2026 Hệ Thống Quản Lý Tổ Chức Sự Kiện và Kiểm Soát Tham Dự - EventHub Pro.</p>
     </footer>
 
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
     <script src="/js/api.js"></script>
     <script src="/js/auth.js?v=6"></script>
     <script>
@@ -308,17 +300,10 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             loadUserProfile();
+            
+            // GSAP Animations
+            gsap.fromTo(".gs-reveal-up", { y: 30, opacity: 0 }, { y: 0, opacity: 1, stagger: 0.2, duration: 0.8, ease: "power2.out" });
         });
-
-        function showToast(message, type = 'success') {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.className = type;
-            toast.style.display = 'block';
-            setTimeout(() => {
-                toast.style.display = 'none';
-            }, 3500);
-        }
 
         async function loadUserProfile() {
             try {
@@ -347,11 +332,11 @@
                 // Role badge
                 const roleBadge = document.getElementById('badge-role');
                 if (data.role === 'ROLE_ADMIN') {
-                    roleBadge.textContent = 'Quản Trị Viên';
+                    roleBadge.innerHTML = '<i class="fa-solid fa-user-shield"></i> Quản Trị Viên';
                 } else if (data.role === 'ROLE_ORGANIZER') {
-                    roleBadge.textContent = 'Ban Tổ Chức';
+                    roleBadge.innerHTML = '<i class="fa-solid fa-user-tie"></i> Ban Tổ Chức';
                 } else {
-                    roleBadge.textContent = 'Người Tham Gia';
+                    roleBadge.innerHTML = '<i class="fa-solid fa-user"></i> Người Tham Gia';
                 }
 
                 // Avatar initials
@@ -376,7 +361,7 @@
             }
 
             btn.disabled = true;
-            btn.textContent = 'Đang lưu...';
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang lưu...';
 
             try {
                 const token = getToken();
@@ -394,7 +379,6 @@
                     throw new Error(data.message || 'Cập nhật thất bại');
                 }
 
-                // Cập nhật session user trong localStorage
                 const currentUser = getUser();
                 if (currentUser) {
                     currentUser.fullName = data.fullName;
@@ -406,15 +390,13 @@
                 const initials = data.fullName.split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
                 document.getElementById('avatar-initials').textContent = initials || 'NG';
 
-                // Tải lại navbar để cập nhật tên góc phải
                 setupNavbar();
-
                 showToast('Cập nhật thông tin thành công!', 'success');
             } catch (err) {
                 showToast(err.message, 'error');
             } finally {
                 btn.disabled = false;
-                btn.textContent = 'Lưu Thay Đổi';
+                btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Lưu Thay Đổi';
             }
         }
 
@@ -436,7 +418,7 @@
             }
 
             btn.disabled = true;
-            btn.textContent = 'Đang xử lý...';
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý...';
 
             try {
                 const token = getToken();
@@ -460,10 +442,9 @@
                 showToast(err.message, 'error');
             } finally {
                 btn.disabled = false;
-                btn.textContent = 'Đổi Mật Khẩu';
+                btn.innerHTML = '<i class="fa-solid fa-key"></i> Đổi Mật Khẩu';
             }
         }
     </script>
 </body>
-
 </html>

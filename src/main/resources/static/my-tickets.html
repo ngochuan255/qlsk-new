@@ -5,47 +5,79 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vé Của Tôi - QR Code Tham Dự</title>
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        .page-header {
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%);
+            color: #ffffff;
+            padding: 3rem 2rem;
+            border-radius: var(--radius-lg);
+            margin-bottom: 2.5rem;
+            box-shadow: var(--shadow-xl);
+            position: relative;
+            overflow: hidden;
+        }
+        .page-header::before {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 60%);
+            animation: rotateBg 20s linear infinite;
+        }
+        @keyframes rotateBg {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
         .tickets-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
             gap: 2rem;
-            margin-top: 1.5rem;
         }
         .ticket-card {
             background: #ffffff;
             border-radius: var(--radius-lg);
             border: 2px dashed var(--border-color);
-            padding: 1.75rem;
+            padding: 2rem;
             position: relative;
-            box-shadow: var(--shadow-md);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
             display: flex;
             flex-direction: column;
             align-items: center;
             text-align: center;
+            transition: all 0.3s ease;
+        }
+        .ticket-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+            border-color: var(--primary-light);
         }
         .ticket-qr {
-            width: 200px;
-            height: 200px;
-            margin: 1rem 0;
+            width: 220px;
+            height: 220px;
+            margin: 1.5rem 0;
             border: 1px solid var(--border-color);
             border-radius: var(--radius-md);
-            padding: 8px;
+            padding: 10px;
             background: #ffffff;
+            box-shadow: var(--shadow-sm);
         }
         .ticket-meta {
             width: 100%;
             text-align: left;
-            margin-top: 1rem;
-            padding-top: 1rem;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
             border-top: 1px solid var(--border-color);
-            font-size: 0.9rem;
+            font-size: 0.95rem;
             color: var(--text-secondary);
         }
         .ticket-meta-row {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 0.4rem;
+            align-items: center;
+            margin-bottom: 0.6rem;
+        }
+        .ticket-meta-row strong {
+            color: var(--text-primary);
         }
     </style>
 </head>
@@ -53,32 +85,40 @@
     <nav class="navbar">
         <div class="nav-container">
             <a href="/" class="brand">
-                <span class="brand-badge">QLSK</span>
+                <span class="brand-badge"><i class="fa-solid fa-ticket"></i> QLSK</span>
                 EventHub Pro
             </a>
             <div id="nav-auth" class="nav-auth"></div>
         </div>
     </nav>
 
-    <div class="container">
-        <h1 style="font-size:1.85rem; font-weight:800; margin-bottom:0.5rem;">Danh Sách Vé Của Bạn</h1>
-        <p style="color:var(--text-secondary); margin-bottom:1.5rem;">
-            Xuất trình mã QR khi đến sự kiện để Ban tổ chức quét check-in vào cửa nhanh chóng.
-        </p>
+    <div class="container gs-container">
+        <div class="page-header gs-reveal-up">
+            <h1 style="font-size:2.2rem; font-weight:800; margin-bottom:0.5rem; position:relative; z-index:2;"><i class="fa-solid fa-ticket-simple" style="margin-right:10px;"></i> Danh Sách Vé Của Bạn</h1>
+            <p style="color:#c7d2fe; font-size:1.05rem; position:relative; z-index:2;">
+                Xuất trình mã QR khi đến sự kiện để Ban tổ chức quét check-in vào cửa nhanh chóng.
+            </p>
+        </div>
 
         <div id="tickets-container" class="tickets-grid">
-            <p style="color:var(--text-muted); grid-column:1/-1;">Đang tải danh sách vé...</p>
+            <p style="color:var(--text-muted); grid-column:1/-1; text-align:center; padding:4rem;"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải danh sách vé...</p>
         </div>
     </div>
 
     <footer>
-        <p>© 2026 Hệ Thống Quản Lý Tổ Chức Sự Kiện và Kiểm Soát Tham Dự - QLSK System.</p>
+        <p>© 2026 Hệ Thống Quản Lý Tổ Chức Sự Kiện và Kiểm Soát Tham Dự - EventHub Pro.</p>
     </footer>
 
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
     <script src="/js/api.js"></script>
     <script src="/js/auth.js?v=6"></script>
     <script>
         requireAuth(['ROLE_ATTENDEE']);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            gsap.fromTo(".gs-reveal-up", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: "power2.out" });
+            loadMyTickets();
+        });
 
         async function loadMyTickets() {
             const container = document.getElementById('tickets-container');
@@ -87,11 +127,13 @@
 
                 if (tickets.length === 0) {
                     container.innerHTML = `
-                        <div style="grid-column:1/-1; text-align:center; padding:3rem; background:white; border-radius:12px;">
-                            <p style="font-size:1.1rem; color:var(--text-secondary); margin-bottom:1rem;">Bạn chưa đăng ký tham gia sự kiện nào.</p>
-                            <a href="/" class="btn btn-primary">Khám phá sự kiện ngay</a>
+                        <div style="grid-column:1/-1; text-align:center; padding:4rem; background:white; border-radius:var(--radius-lg); border:1px solid var(--border-color); box-shadow:var(--shadow-sm);" class="ticket-card gs-item">
+                            <i class="fa-solid fa-box-open" style="font-size:3rem; color:#cbd5e1; margin-bottom:1rem; display:block;"></i>
+                            <p style="font-size:1.15rem; color:var(--text-secondary); margin-bottom:1.5rem;">Bạn chưa đăng ký tham gia sự kiện nào.</p>
+                            <a href="/" class="btn btn-primary"><i class="fa-solid fa-compass"></i> Khám phá sự kiện ngay</a>
                         </div>
                     `;
+                    gsap.fromTo(".gs-item", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5 });
                     return;
                 }
 
@@ -99,49 +141,51 @@
                     const isCancelled = t.status === 'CANCELLED';
                     const isCheckedIn = t.isCheckedIn;
 
-                    let statusBadge = `<span class="badge badge-open">Đã Xác Nhận</span>`;
-                    if (isCancelled) statusBadge = `<span class="badge badge-full">Đã Hủy</span>`;
-                    else if (isCheckedIn) statusBadge = `<span class="badge badge-completed">Đã Check-in</span>`;
+                    let statusBadge = `<span class="badge badge-open"><i class="fa-solid fa-check"></i> Đã Xác Nhận</span>`;
+                    if (isCancelled) statusBadge = `<span class="badge badge-full"><i class="fa-solid fa-xmark"></i> Đã Hủy</span>`;
+                    else if (isCheckedIn) statusBadge = `<span class="badge badge-completed"><i class="fa-solid fa-check-double"></i> Đã Check-in</span>`;
 
                     const qrContent = isCancelled ? `
-                        <div style="height:200px; display:flex; align-items:center; justify-content:center; color:var(--danger); font-weight:700;">
+                        <div style="height:220px; display:flex; align-items:center; justify-content:center; color:var(--danger); font-weight:800; font-size:1.5rem; background:#fef2f2; width:220px; margin:1.5rem auto; border-radius:var(--radius-md); border:1px dashed #fecaca;">
                             Vé Đã Hủy
                         </div>
                     ` : `
                         <img src="${t.qrCodeImageBase64}" class="ticket-qr" alt="Mã QR Check-in">
-                        <div style="font-family:monospace; font-size:0.75rem; color:var(--text-muted);">${t.qrCodeToken}</div>
+                        <div style="font-family:monospace; font-size:0.85rem; color:var(--text-muted); background:#f1f5f9; padding:0.4rem 1rem; border-radius:20px;">${t.qrCodeToken}</div>
                     `;
 
                     const cancelBtn = (!isCancelled && !isCheckedIn) ? `
-                        <button onclick="cancelTicket(${t.id})" class="btn btn-outline btn-sm" style="color:var(--danger); border-color:var(--danger); margin-top:1rem; width:100%;">
-                            Hủy Đăng Ký Vé
+                        <button onclick="cancelTicket(${t.id})" class="btn btn-outline" style="color:var(--danger); border-color:var(--danger); margin-top:1.5rem; width:100%;">
+                            <i class="fa-solid fa-ban"></i> Hủy Đăng Ký Vé
                         </button>
                     ` : '';
 
                     return `
-                        <div class="ticket-card">
-                            <div style="width:100%; display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
-                                <span style="font-size:0.8rem; font-weight:700; color:var(--primary);">${t.registrationCode}</span>
+                        <div class="ticket-card gs-item opacity-0">
+                            <div style="width:100%; display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                                <span style="font-size:0.9rem; font-weight:800; color:var(--primary); background:var(--primary-light); padding:0.3rem 0.8rem; border-radius:20px;">${t.registrationCode}</span>
                                 ${statusBadge}
                             </div>
-                            <h3 style="font-size:1.2rem; font-weight:700; margin-bottom:0.5rem;">${t.eventTitle}</h3>
-                            <div style="font-size:0.85rem; color:var(--text-secondary);">Ghế ngồi: <strong style="color:var(--primary);">${t.seatCode}</strong></div>
+                            <h3 style="font-size:1.35rem; font-weight:800; margin-bottom:0.5rem; color:var(--text-primary); line-height:1.3;">${t.eventTitle}</h3>
+                            <div style="font-size:0.95rem; color:var(--text-secondary);">Ghế ngồi: <strong style="color:var(--primary); font-size:1.1rem;">${t.seatCode}</strong></div>
 
                             ${qrContent}
 
                             <div class="ticket-meta">
-                                <div class="ticket-meta-row"><span>Thời gian:</span><strong>${formatDateTime(t.eventStartTime)}</strong></div>
-                                <div class="ticket-meta-row"><span>Địa điểm:</span><strong>${t.eventLocation}</strong></div>
-                                <div class="ticket-meta-row"><span>Người tham dự:</span><strong>${t.userName}</strong></div>
-                                <div class="ticket-meta-row"><span>Check-in:</span><strong>${isCheckedIn ? formatDateTime(t.checkInTime) : 'Chưa check-in'}</strong></div>
+                                <div class="ticket-meta-row"><span><i class="fa-regular fa-clock" style="width:20px;"></i> Thời gian:</span><strong>${formatDateTime(t.eventStartTime)}</strong></div>
+                                <div class="ticket-meta-row"><span><i class="fa-solid fa-location-dot" style="width:20px;"></i> Địa điểm:</span><strong>${t.eventLocation}</strong></div>
+                                <div class="ticket-meta-row"><span><i class="fa-solid fa-user" style="width:20px;"></i> Người tham dự:</span><strong>${t.userName}</strong></div>
+                                <div class="ticket-meta-row"><span><i class="fa-solid fa-qrcode" style="width:20px;"></i> Check-in:</span><strong>${isCheckedIn ? formatDateTime(t.checkInTime) : 'Chưa check-in'}</strong></div>
                             </div>
 
                             ${cancelBtn}
                         </div>
                     `;
                 }).join('');
+
+                gsap.fromTo(".gs-item", { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, stagger: 0.1, ease: "power2.out", clearProps: "all" });
             } catch (err) {
-                container.innerHTML = `<p style="color:var(--danger); grid-column:1/-1;">Lỗi tải vé: ${err.message}</p>`;
+                container.innerHTML = `<p style="color:var(--danger); grid-column:1/-1; text-align:center;"><i class="fa-solid fa-triangle-exclamation"></i> Lỗi tải vé: ${err.message}</p>`;
             }
         }
 
@@ -156,8 +200,6 @@
                 showToast(err.message, 'error');
             }
         }
-
-        document.addEventListener('DOMContentLoaded', loadMyTickets);
     </script>
 </body>
 </html>
