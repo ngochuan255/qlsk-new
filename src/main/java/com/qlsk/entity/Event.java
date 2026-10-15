@@ -49,6 +49,10 @@ public class Event {
     private Integer maxAttendees = 50;
 
     @Builder.Default
+    @Column(name = "has_registration_history")
+    private Boolean hasRegistrationHistory = false;
+
+    @Builder.Default
     @Column(name = "estimated_budget", precision = 15, scale = 2)
     private BigDecimal estimatedBudget = BigDecimal.ZERO;
 

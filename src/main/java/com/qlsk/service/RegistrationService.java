@@ -27,15 +27,16 @@ public class RegistrationService {
 
     @Transactional
     public TicketDto registerEvent(Long userId, RegisterEventRequest request) {
+        // Lock before ordinary reads so MySQL's snapshot is created after any earlier registration commits.
+        Event event = eventRepository.findByIdForUpdate(request.getEventId())
+                .orElseThrow(() -> new RuntimeException("Sự kiện không tồn tại"));
+
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
 
         if (user.getRole() != null && "ROLE_ADMIN".equalsIgnoreCase(user.getRole().getName())) {
             throw new RuntimeException("Tài khoản Quản trị viên (Admin) không tham gia đăng ký sự kiện!");
         }
-
-        Event event = eventRepository.findById(request.getEventId())
-                .orElseThrow(() -> new RuntimeException("Sự kiện không tồn tại"));
 
         if (event.getStatus() != EventStatus.OPEN_FOR_REGISTRATION) {
             throw new RuntimeException("Sự kiện hiện không mở đăng ký (Trạng thái: " + event.getStatus() + ")");
@@ -91,8 +92,9 @@ public class RegistrationService {
         // If capacity reached after this registration, mark as FULL
         if (confirmedCount + 1 >= event.getMaxAttendees()) {
             event.setStatus(EventStatus.FULL);
-            eventRepository.save(event);
         }
+        event.setHasRegistrationHistory(true);
+        eventRepository.save(event);
 
         return toTicketDto(saved);
     }

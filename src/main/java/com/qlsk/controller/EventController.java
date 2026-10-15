@@ -63,9 +63,10 @@ public class EventController {
     @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
     public ResponseEntity<EventResponseDto> updateStatus(
             @PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal principal,
             @RequestBody Map<String, String> body) {
         EventStatus newStatus = EventStatus.valueOf(body.get("status"));
-        return ResponseEntity.ok(eventService.updateEventStatus(id, newStatus));
+        return ResponseEntity.ok(eventService.updateEventStatus(id, newStatus, principal.getId()));
     }
 
     // Admin endpoints
@@ -87,14 +88,16 @@ public class EventController {
     @PreAuthorize("hasAnyRole('ADMIN', 'ORGANIZER')")
     public ResponseEntity<EventResponseDto> updateEvent(
             @PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal principal,
             @RequestBody EventUpdateRequest request) {
-        return ResponseEntity.ok(eventService.updateEvent(id, request));
+        return ResponseEntity.ok(eventService.updateEvent(id, request, principal.getId()));
     }
 
     @DeleteMapping({"/admin/events/{id}", "/organizer/events/{id}"})
     @PreAuthorize("hasAnyRole('ADMIN', 'ORGANIZER')")
-    public ResponseEntity<Map<String, String>> deleteEvent(@PathVariable Long id) {
-        eventService.deleteEvent(id);
+    public ResponseEntity<Map<String, String>> deleteEvent(@PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        eventService.deleteEvent(id, principal.getId());
         return ResponseEntity.ok(Map.of("message", "Đã xóa sự kiện thành công"));
     }
 }

@@ -165,13 +165,14 @@ class ApplicationIntegrationTest extends IntegrationTestSupport {
     @Test void organizerCannotListAnotherOrganizersRegistrations() throws Exception {
         request(otherOrganizer, get("/api/organizer/events/" + event.getId() + "/registrations"), null, 403);
     }
-    @Test void deleteEventRemovesDependencies() throws Exception {
+    @Test void deleteEventWithRegistrationsPreservesDependencies() throws Exception {
         Registration reg = registration(attendee);
         checkIns.saveAndFlush(CheckIn.builder().event(event).registration(reg).checkedInBy(organizer).build());
-        request(admin, delete("/api/admin/events/" + event.getId()), null, 200);
-        assertThat(events.existsById(event.getId())).isFalse();
-        assertThat(registrations.existsById(reg.getId())).isFalse();
-        assertThat(seats.countByEventId(event.getId())).isZero();
+        request(admin, delete("/api/admin/events/" + event.getId()), null, 400);
+        assertThat(events.existsById(event.getId())).isTrue();
+        assertThat(registrations.existsById(reg.getId())).isTrue();
+        assertThat(checkIns.existsByRegistrationId(reg.getId())).isTrue();
+        assertThat(seats.countByEventId(event.getId())).isEqualTo(1);
     }
     @Test void uploadRejectsEmptyOrNonImageFiles() throws Exception {
         mvc.perform(multipart("/api/upload").file(new MockMultipartFile("file", "empty.png", "image/png", new byte[0])))

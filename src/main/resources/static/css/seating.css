@@ -92,11 +92,12 @@
 }
 
 .seat.seat-booked {
-    background: #e2e8f0;
-    color: #94a3b8;
+    background: #dc2626;
+    color: #ffffff;
+    border-color: #b91c1c;
     cursor: not-allowed;
     text-decoration: line-through;
-    opacity: 0.6;
+    opacity: 1;
 }
 
 /* Legend */

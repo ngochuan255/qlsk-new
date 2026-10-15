@@ -10,6 +10,7 @@ import java.util.Optional;
 
 @Repository
 public interface RegistrationRepository extends JpaRepository<Registration, Long> {
+    boolean existsByEventId(Long eventId);
     List<Registration> findByUserIdOrderByRegisteredAtDesc(Long userId);
     List<Registration> findByEventIdOrderByRegisteredAtAsc(Long eventId);
     Optional<Registration> findByQrCodeToken(String qrCodeToken);

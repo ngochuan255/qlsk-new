@@ -4,9 +4,11 @@ import com.qlsk.dto.EventDtos.*;
 import com.qlsk.entity.*;
 import com.qlsk.repository.*;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -92,8 +94,9 @@ public class EventService {
 
     @Transactional
     public EventResponseDto approveEvent(Long eventId, Long adminId) {
-        Event event = eventRepository.findById(eventId)
+        Event event = eventRepository.findByIdForUpdate(eventId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy sự kiện"));
+        assertCanModify(event);
 
         User admin = userRepository.findById(adminId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy quản trị viên"));
@@ -106,9 +109,11 @@ public class EventService {
     }
 
     @Transactional
-    public EventResponseDto updateEventStatus(Long eventId, EventStatus newStatus) {
-        Event event = eventRepository.findById(eventId)
+    public EventResponseDto updateEventStatus(Long eventId, EventStatus newStatus, Long actorId) {
+        Event event = eventRepository.findByIdForUpdate(eventId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy sự kiện"));
+        assertCanManage(event, actorId);
+        assertCanModify(event);
 
         event.setStatus(newStatus);
         return toDto(eventRepository.save(event));
@@ -183,9 +188,23 @@ public class EventService {
     }
 
     @Transactional
-    public EventResponseDto updateEvent(Long eventId, EventUpdateRequest request) {
-        Event event = eventRepository.findById(eventId)
+    public EventResponseDto updateEvent(Long eventId, EventUpdateRequest request, Long actorId) {
+        Event event = eventRepository.findByIdForUpdate(eventId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy sự kiện với ID: " + eventId));
+
+        assertCanManage(event, actorId);
+        assertCanModify(event);
+        if (request.getMaxAttendees() != null) {
+            throw new RuntimeException("Không thể thay đổi số lượng người tham gia tối đa khi sửa sự kiện");
+        }
+        LocalDateTime start = request.getStartTime() != null ? request.getStartTime() : event.getStartTime();
+        LocalDateTime end = request.getEndTime() != null ? request.getEndTime() : event.getEndTime();
+        if (!start.isAfter(LocalDateTime.now())) {
+            throw new RuntimeException("Thời gian bắt đầu sự kiện phải ở trong tương lai");
+        }
+        if (!end.isAfter(start)) {
+            throw new RuntimeException("Thời gian kết thúc phải sau thời gian bắt đầu");
+        }
 
         if (request.getTitle() != null && !request.getTitle().trim().isEmpty()) {
             event.setTitle(request.getTitle().trim());
@@ -202,16 +221,10 @@ public class EventService {
             event.setStartTime(request.getStartTime());
         }
         if (request.getEndTime() != null) {
-            if (event.getStartTime() != null && request.getEndTime().isBefore(event.getStartTime())) {
-                throw new RuntimeException("Thời gian kết thúc phải sau thời gian bắt đầu");
-            }
             event.setEndTime(request.getEndTime());
         }
         if (request.getLocation() != null && !request.getLocation().trim().isEmpty()) {
             event.setLocation(request.getLocation().trim());
-        }
-        if (request.getMaxAttendees() != null && request.getMaxAttendees() > 0) {
-            event.setMaxAttendees(request.getMaxAttendees());
         }
         if (request.getEstimatedBudget() != null) {
             event.setEstimatedBudget(request.getEstimatedBudget());
@@ -260,9 +273,17 @@ public class EventService {
 
     @Transactional
     public void deleteEvent(Long eventId) {
-        if (!eventRepository.existsById(eventId)) {
-            throw new RuntimeException("Không tìm thấy sự kiện với ID: " + eventId);
-        }
+        deleteEvent(eventId, null);
+    }
+
+    @Transactional
+    public void deleteEvent(Long eventId, Long actorId) {
+        Event event = eventRepository.findByIdForUpdate(eventId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy sự kiện với ID: " + eventId));
+        // Internal account deletion may have loaded this entity from an older MySQL transaction snapshot.
+        entityManager.refresh(event, LockModeType.PESSIMISTIC_WRITE);
+        if (actorId != null) assertCanManage(event, actorId);
+        assertCanModify(event);
 
         // 1. Xóa Check-in (phụ thuộc vào Registration và Event)
         entityManager.createNativeQuery(
@@ -298,9 +319,36 @@ public class EventService {
         entityManager.clear();
     }
 
+    private void assertCanManage(Event event, Long actorId) {
+        User actor = userRepository.findById(actorId)
+                .orElseThrow(() -> new AccessDeniedException("Không tìm thấy người dùng"));
+        boolean admin = actor.getRole() != null && "ROLE_ADMIN".equals(actor.getRole().getName());
+        if (!admin && !event.getOrganizer().getId().equals(actorId)) {
+            throw new AccessDeniedException("Bạn chỉ có thể sửa hoặc xóa sự kiện do mình tổ chức");
+        }
+    }
+
+    private String modificationBlockedReason(Event event) {
+        if (event.getStatus() == EventStatus.ONGOING || event.getStatus() == EventStatus.COMPLETED
+                || !event.getStartTime().isAfter(LocalDateTime.now())) {
+            return "Không thể sửa hoặc xóa sự kiện đã bắt đầu hoặc đã kết thúc";
+        }
+        if (Boolean.TRUE.equals(event.getHasRegistrationHistory())
+                || registrationRepository.existsByEventId(event.getId())) {
+            return "Không thể sửa hoặc xóa sự kiện đã có người đăng ký, kể cả đăng ký đã hủy";
+        }
+        return null;
+    }
+
+    private void assertCanModify(Event event) {
+        String reason = modificationBlockedReason(event);
+        if (reason != null) throw new RuntimeException(reason);
+    }
+
     public EventResponseDto toDto(Event event) {
         long confirmedCount = registrationRepository.countByEventIdAndStatus(event.getId(), RegistrationStatus.CONFIRMED);
         int remaining = Math.max(0, event.getMaxAttendees() - (int) confirmedCount);
+        String blockedReason = modificationBlockedReason(event);
 
         Double avgRating = feedbackRepository.getAverageRatingByEventId(event.getId());
         List<Feedback> feedbacks = feedbackRepository.findByEventIdOrderByCreatedAtDesc(event.getId());
@@ -328,6 +376,8 @@ public class EventService {
                 .location(event.getLocation())
                 .maxAttendees(event.getMaxAttendees())
                 .registeredAttendees((int) confirmedCount)
+                .canModify(blockedReason == null)
+                .modificationBlockedReason(blockedReason)
                 .remainingSeats(remaining)
                 .estimatedBudget(event.getEstimatedBudget())
                 .status(event.getStatus())

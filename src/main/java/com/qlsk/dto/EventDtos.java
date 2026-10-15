@@ -85,6 +85,8 @@ public class EventDtos {
         private String location;
         private Integer maxAttendees;
         private Integer registeredAttendees;
+        private Boolean canModify;
+        private String modificationBlockedReason;
         private Integer remainingSeats;
         private BigDecimal estimatedBudget;
         private EventStatus status;

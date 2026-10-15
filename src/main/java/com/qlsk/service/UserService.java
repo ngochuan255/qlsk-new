@@ -227,6 +227,11 @@ public class UserService {
         ).setParameter("userId", targetUserId).executeUpdate();
 
         // 5. Xóa đăng ký / vé tham dự của người này (nếu có)
+        // Keep the event locked for edits even when account deletion removes legacy ticket rows.
+        entityManager.createNativeQuery(
+            "UPDATE events SET has_registration_history = true WHERE id IN (SELECT event_id FROM registrations WHERE user_id = :userId)"
+        ).setParameter("userId", targetUserId).executeUpdate();
+
         entityManager.createNativeQuery(
             "DELETE FROM check_ins WHERE registration_id IN (SELECT id FROM registrations WHERE user_id = :userId)"
         ).setParameter("userId", targetUserId).executeUpdate();
@@ -240,6 +245,8 @@ public class UserService {
         ).setParameter("userId", targetUserId).executeUpdate();
 
         // 6. Xóa các sự kiện do người này tổ chức (kèm toàn bộ dữ liệu phụ thuộc như check-in, vé, ghế, phản hồi, chi phí)
+        entityManager.flush();
+        entityManager.clear();
         List<Event> organizedEvents = eventRepository.findByOrganizerIdOrderByCreatedAtDesc(targetUserId);
         for (Event event : organizedEvents) {
             eventService.deleteEvent(event.getId());

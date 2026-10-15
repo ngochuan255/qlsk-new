@@ -441,10 +441,6 @@
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="edit-event-max">Số lượng người tham gia tối đa *</label>
-                            <input type="number" id="edit-event-max" class="form-control" min="1" required>
-                        </div>
-                        <div class="form-group">
                             <label for="edit-event-budget">Kinh phí dự kiến (VNĐ)</label>
                             <input type="number" id="edit-event-budget" class="form-control" placeholder="Ví dụ: 15000000"
                                 min="0" step="any">
@@ -493,6 +489,7 @@
 
     <script src="/js/api.js"></script>
     <script src="/js/auth.js"></script>
+    <script src="/js/event-permissions.js"></script>
     <script>
         requireAuth(['ROLE_ORGANIZER']);
 
@@ -532,6 +529,8 @@
 
             tbody.innerHTML = events.map(e => {
                 const safeTitle = (e.title || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                const mutationDisabled = getEventMutationBlockReason(e)
+                    ? 'disabled title="Chỉ được sửa hoặc xóa khi sự kiện chưa diễn ra và chưa có người đăng ký."' : '';
 
                 return `
                     <tr>
@@ -543,8 +542,8 @@
                         <td style="text-align:center;"><span class="badge ${getStatusBadge(e.status)}">${e.statusText}</span></td>
                         <td style="text-align:center;">
                             <div style="display:inline-flex; gap:0.4rem; align-items:center; justify-content:center; flex-wrap:wrap;">
-                                <button onclick="openEditEventModal(${e.id})" class="btn btn-outline btn-sm">Sửa</button>
-                                <button onclick="deleteEvent(${e.id}, '${safeTitle}')" class="btn btn-outline btn-sm" style="color:var(--danger); border-color:var(--danger);">Xóa</button>
+                                <button onclick="openEditEventModal(${e.id})" class="btn btn-outline btn-sm" ${mutationDisabled}>Sửa</button>
+                                <button onclick="deleteEvent(${e.id}, '${safeTitle}')" class="btn btn-outline btn-sm" style="color:var(--danger); border-color:var(--danger);" ${mutationDisabled}>Xóa</button>
                             </div>
                         </td>
                     </tr>
@@ -570,12 +569,12 @@
 
         function openEditEventModal(id) {
             const ev = allEventsData.find(e => e.id === id);
-            if (!ev) return;
+            const reason = getEventMutationBlockReason(ev);
+            if (reason) { showToast(reason, 'error'); return; }
 
             document.getElementById('edit-event-id').value = ev.id;
             document.getElementById('edit-event-title').value = ev.title || '';
             document.getElementById('edit-event-location').value = ev.location || '';
-            document.getElementById('edit-event-max').value = ev.maxAttendees || 50;
             document.getElementById('edit-event-budget').value = ev.estimatedBudget != null ? ev.estimatedBudget : '';
             document.getElementById('edit-event-desc').value = ev.description || '';
             document.getElementById('edit-event-status').value = ev.status || 'DRAFT';
@@ -683,6 +682,8 @@
         async function saveEventEdit(e) {
             e.preventDefault();
             const id = document.getElementById('edit-event-id').value;
+            const reason = getEventMutationBlockReason(allEventsData.find(event => String(event.id) === String(id)));
+            if (reason) { showToast(reason, 'error'); return; }
             const startVal = document.getElementById('edit-event-start').value;
             const endVal = document.getElementById('edit-event-end').value;
 
@@ -698,7 +699,6 @@
                 startTime: startVal,
                 endTime: endVal,
                 location: document.getElementById('edit-event-location').value.trim(),
-                maxAttendees: parseInt(document.getElementById('edit-event-max').value),
                 estimatedBudget: document.getElementById('edit-event-budget') && document.getElementById('edit-event-budget').value ? parseFloat(document.getElementById('edit-event-budget').value) : 0,
                 bannerUrl: document.getElementById('edit-event-banner').value.trim(),
                 description: document.getElementById('edit-event-desc').value.trim()
@@ -721,7 +721,9 @@
         }
 
         async function deleteEvent(id, title) {
-            if (!confirm(`Bạn có chắc chắn muốn xóa sự kiện "${title}" không?\n\nLƯU Ý: Toàn bộ danh sách đăng ký, vé tham dự, sơ đồ chỗ ngồi và đánh giá của sự kiện này sẽ bị xóa vĩnh viễn!`)) {
+            const reason = getEventMutationBlockReason(allEventsData.find(event => event.id === id));
+            if (reason) { showToast(reason, 'error'); return; }
+            if (!confirm(`Bạn có chắc chắn muốn xóa sự kiện "${title}" không?\n\nSơ đồ chỗ ngồi và dữ liệu liên quan sẽ bị xóa vĩnh viễn.`)) {
                 return;
             }
 
